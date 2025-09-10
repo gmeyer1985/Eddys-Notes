@@ -643,14 +643,31 @@ app.post('/api/auth/login', (req, res) => {
             req.session.userId = user.id;
             req.session.username = user.username;
             console.log('Login successful for user:', user.username, 'Session ID:', req.sessionID);
+            console.log('Session data before save:', req.session);
 
-            res.json({
-                id: user.id,
-                username: user.username,
-                email: user.email,
-                firstName: user.first_name,
-                lastName: user.last_name,
-                message: 'Login successful'
+            // Explicitly save session before sending response
+            req.session.save((saveErr) => {
+                if (saveErr) {
+                    console.error('Session save error:', saveErr);
+                    return res.status(500).json({ error: 'Failed to save login session' });
+                }
+                
+                console.log('Session saved successfully, sending response...');
+                console.log('Final session data:', req.session);
+                
+                const responseData = {
+                    id: user.id,
+                    username: user.username,
+                    email: user.email,
+                    firstName: user.first_name,
+                    lastName: user.last_name,
+                    is_admin: user.is_admin || false,
+                    message: 'Login successful'
+                };
+                
+                console.log('Sending response:', responseData);
+                res.json(responseData);
+                console.log('Response sent successfully');
             });
         } catch (error) {
             res.status(500).json({ error: error.message });
