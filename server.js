@@ -39,8 +39,21 @@ if (NODE_ENV === 'production') {
             url: process.env.REDIS_URL || process.env.REDIS_PRIVATE_URL
         });
         
-        redisClient.connect().catch(console.error);
-        console.log('Redis client connected for session storage');
+        redisClient.connect().catch((err) => {
+            console.error('Redis connection failed:', err);
+        });
+        
+        redisClient.on('connect', () => {
+            console.log('Redis client connected for session storage');
+        });
+        
+        redisClient.on('error', (err) => {
+            console.error('Redis client error:', err);
+        });
+        
+        redisClient.on('disconnect', () => {
+            console.warn('Redis client disconnected');
+        });
     } catch (error) {
         console.warn('Redis not available, falling back to MemoryStore:', error.message);
     }
@@ -645,29 +658,49 @@ app.post('/api/auth/login', (req, res) => {
             console.log('Login successful for user:', user.username, 'Session ID:', req.sessionID);
             console.log('Session data before save:', req.session);
 
-            // Explicitly save session before sending response
+            // Prepare response data
+            const responseData = {
+                id: user.id,
+                username: user.username,
+                email: user.email,
+                firstName: user.first_name,
+                lastName: user.last_name,
+                is_admin: user.is_admin || false,
+                message: 'Login successful'
+            };
+
+            // Try to save session with timeout fallback
+            console.log('Attempting to save session...');
+            const sessionSaveTimeout = setTimeout(() => {
+                console.warn('Session save timed out after 5 seconds, sending response anyway');
+                if (!res.headersSent) {
+                    console.log('Sending response despite session save timeout:', responseData);
+                    res.json(responseData);
+                    console.log('Response sent successfully (timeout fallback)');
+                }
+            }, 5000);
+
             req.session.save((saveErr) => {
+                clearTimeout(sessionSaveTimeout);
+                
                 if (saveErr) {
                     console.error('Session save error:', saveErr);
-                    return res.status(500).json({ error: 'Failed to save login session' });
+                    if (!res.headersSent) {
+                        console.log('Sending response despite session save error:', responseData);
+                        res.json(responseData);
+                        console.log('Response sent successfully (error fallback)');
+                    }
+                    return;
                 }
                 
                 console.log('Session saved successfully, sending response...');
                 console.log('Final session data:', req.session);
                 
-                const responseData = {
-                    id: user.id,
-                    username: user.username,
-                    email: user.email,
-                    firstName: user.first_name,
-                    lastName: user.last_name,
-                    is_admin: user.is_admin || false,
-                    message: 'Login successful'
-                };
-                
-                console.log('Sending response:', responseData);
-                res.json(responseData);
-                console.log('Response sent successfully');
+                if (!res.headersSent) {
+                    console.log('Sending response:', responseData);
+                    res.json(responseData);
+                    console.log('Response sent successfully');
+                }
             });
         } catch (error) {
             res.status(500).json({ error: error.message });
