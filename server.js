@@ -407,6 +407,7 @@ app.post('/api/auth/signup', async (req, res) => {
 
 app.post('/api/auth/login', (req, res) => {
     const { username, password } = req.body;
+    console.log('🔐 Login attempt for:', username);
 
     if (!username || !password) {
         return res.status(400).json({ error: 'Username and password are required' });
@@ -415,21 +416,30 @@ app.post('/api/auth/login', (req, res) => {
     const sql = 'SELECT * FROM users WHERE username = ? OR email = ?';
     db.get(sql, [username, username], async (err, user) => {
         if (err) {
+            console.error('❌ Database error:', err);
             res.status(500).json({ error: err.message });
             return;
         }
 
         if (!user) {
+            console.log('❌ User not found:', username);
             res.status(401).json({ error: 'Invalid credentials' });
             return;
         }
 
+        console.log('👤 User found:', user.username, 'Hash exists:', !!user.password_hash);
+
         try {
             const validPassword = await bcrypt.compare(password, user.password_hash);
+            console.log('🔑 Password comparison result:', validPassword);
+            
             if (!validPassword) {
+                console.log('❌ Invalid password for user:', username);
                 res.status(401).json({ error: 'Invalid credentials' });
                 return;
             }
+
+            console.log('✅ Login successful for:', username);
 
             // Update last login
             db.run('UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = ?', [user.id]);
