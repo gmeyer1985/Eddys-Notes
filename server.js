@@ -12,6 +12,25 @@ const { v4: uuidv4 } = require('uuid');
 const app = express();
 const PORT = process.env.PORT || 3004;
 const NODE_ENV = process.env.NODE_ENV || 'development';
+
+// Redis session store for production
+let RedisStore, redisClient;
+if (NODE_ENV === 'production') {
+    try {
+        RedisStore = require('connect-redis').default;
+        const { createClient } = require('redis');
+        
+        // Railway provides REDIS_URL environment variable
+        redisClient = createClient({
+            url: process.env.REDIS_URL || process.env.REDIS_PRIVATE_URL
+        });
+        
+        redisClient.connect().catch(console.error);
+        console.log('Redis client connected for session storage');
+    } catch (error) {
+        console.warn('Redis not available, falling back to MemoryStore:', error.message);
+    }
+}
 const SESSION_SECRET = process.env.SESSION_SECRET || 'fishing-log-secret-key-' + uuidv4();
 
 // Middleware
@@ -23,17 +42,30 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // Session configuration
-app.use(session({
+const sessionConfig = {
     secret: SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
     cookie: { 
-        secure: false, // Disable secure for now to test
+        secure: NODE_ENV === 'production', // Use secure cookies in production
         maxAge: 24 * 60 * 60 * 1000, // 24 hours
         sameSite: 'lax', // Use lax for compatibility
         httpOnly: true // Security: prevent XSS
     }
-}));
+};
+
+// Use Redis store in production if available
+if (NODE_ENV === 'production' && RedisStore && redisClient) {
+    sessionConfig.store = new RedisStore({
+        client: redisClient,
+        prefix: 'fishing-log:'
+    });
+    console.log('Using Redis session store');
+} else {
+    console.log('Using MemoryStore for sessions (development mode)');
+}
+
+app.use(session(sessionConfig));
 
 app.use('/uploads', express.static('uploads'));
 app.use(express.static('.'));
