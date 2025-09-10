@@ -91,12 +91,21 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('signupFormElement').addEventListener('submit', async function(e) {
         e.preventDefault();
         
+        // Prevent double submission
+        const submitButton = this.querySelector('button[type="submit"]');
+        if (submitButton.disabled) {
+            console.log('Signup already in progress, ignoring duplicate submission');
+            return;
+        }
+        
         const username = document.getElementById('signupUsername').value.trim();
         const email = document.getElementById('signupEmail').value.trim();
         const password = document.getElementById('signupPassword').value;
         const firstName = document.getElementById('signupFirstName').value.trim();
         const lastName = document.getElementById('signupLastName').value.trim();
         const state = document.getElementById('signupState').value.trim();
+        
+        console.log('Signup form submission:', { username, email, firstName, lastName, state });
         
         if (!username || !email || !password) {
             showAuthMessage('Username, email, and password are required');
@@ -107,6 +116,10 @@ document.addEventListener('DOMContentLoaded', function() {
             showAuthMessage('Password must be at least 6 characters long');
             return;
         }
+        
+        // Disable submit button to prevent double submission
+        submitButton.disabled = true;
+        submitButton.textContent = 'Creating Account...';
         
         try {
             const response = await fetch('/api/auth/signup', {
@@ -159,6 +172,10 @@ document.addEventListener('DOMContentLoaded', function() {
         } catch (error) {
             console.error('Signup error:', error);
             showAuthMessage('Network error. Please try again.');
+        } finally {
+            // Re-enable submit button
+            submitButton.disabled = false;
+            submitButton.textContent = 'Create Account';
         }
     });
 });

@@ -498,9 +498,20 @@ app.post('/api/auth/signup', async (req, res) => {
                     const sql = `INSERT INTO users (username, email, password_hash, first_name, last_name, state)
                                  VALUES (?, ?, ?, ?, ?, ?)`;
 
+                    console.log('DEBUG: About to insert user with SQL:', sql);
+                    console.log('DEBUG: Insert parameters:', [username, email, '[REDACTED]', firstName || null, lastName || null, state || null]);
+                    
                     db.run(sql, [username, email, passwordHash, firstName || null, lastName || null, state || null], function(err) {
                         if (err) {
                             console.error('Database error during user creation:', err);
+                            
+                            // Let's check what users exist right after the error
+                            console.log('DEBUG: Checking users table after insert error...');
+                            db.all('SELECT id, username, email FROM users ORDER BY id DESC LIMIT 5', (checkErr, users) => {
+                                if (!checkErr) {
+                                    console.log('DEBUG: Current users in database:', users);
+                                }
+                            });
                             
                             // Handle specific SQLite constraint errors (fallback safety)
                             if (err.message.includes('UNIQUE constraint failed: users.email')) {
@@ -520,6 +531,7 @@ app.post('/api/auth/signup', async (req, res) => {
                             }
                         }
 
+                        console.log('DEBUG: User creation successful!');
                         console.log('New user created successfully:', username, 'with ID:', this.lastID);
                         req.session.userId = this.lastID;
                         req.session.username = username;
