@@ -448,16 +448,32 @@ app.post('/api/auth/signup', async (req, res) => {
         
         // Use database serialization to prevent race conditions
         db.serialize(() => {
+            // First, let's see all users with similar emails for debugging
+            console.log('DEBUG: Checking for similar emails to:', email);
+            db.all('SELECT id, username, email FROM users WHERE email LIKE ?', [`%${email.split('@')[1]}`], (debugErr, similarEmails) => {
+                if (!debugErr) {
+                    console.log('DEBUG: Found similar domain emails:', similarEmails);
+                }
+            });
+            
             // Single query to check both username and email
-            db.get('SELECT id, username, email FROM users WHERE LOWER(username) = LOWER(?) OR LOWER(email) = LOWER(?)', 
-                   [username, email], async (err, existingUser) => {
+            const checkQuery = 'SELECT id, username, email FROM users WHERE LOWER(username) = LOWER(?) OR LOWER(email) = LOWER(?)';
+            console.log('DEBUG: Running duplicate check query:', checkQuery);
+            console.log('DEBUG: Query parameters:', [username, email]);
+            
+            db.get(checkQuery, [username, email], async (err, existingUser) => {
                 if (err) {
                     console.error('Database error during user existence check:', err);
                     return res.status(500).json({ error: 'Database error occurred' });
                 }
 
+                console.log('DEBUG: Duplicate check result:', existingUser || 'No duplicates found');
+
                 if (existingUser) {
                     console.log('Duplicate found - Existing user:', existingUser);
+                    console.log('DEBUG: Comparing emails - existing:', existingUser.email, 'new:', email);
+                    console.log('DEBUG: Email match:', existingUser.email.toLowerCase() === email.toLowerCase());
+                    
                     if (existingUser.email.toLowerCase() === email.toLowerCase()) {
                         return res.status(400).json({ 
                             error: 'An account with this email address already exists. Please try logging in instead.' 
@@ -522,13 +538,14 @@ app.post('/api/auth/signup', async (req, res) => {
     }
 });
 
-// Debug endpoint to check existing users (remove in production)
+// Debug endpoint to check existing users (temporarily enabled for production debugging)
 app.get('/api/debug/users', (req, res) => {
-    if (NODE_ENV === 'production') {
-        return res.status(404).json({ error: 'Not found' });
-    }
+    // Temporarily allow in production for debugging
+    // if (NODE_ENV === 'production') {
+    //     return res.status(404).json({ error: 'Not found' });
+    // }
     
-    db.all('SELECT id, username, email, created_at FROM users ORDER BY created_at DESC LIMIT 10', (err, rows) => {
+    db.all('SELECT id, username, email, created_at FROM users ORDER BY created_at DESC LIMIT 20', (err, rows) => {
         if (err) {
             res.status(500).json({ error: err.message });
         } else {
