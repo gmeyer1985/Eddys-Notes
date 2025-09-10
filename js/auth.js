@@ -42,13 +42,37 @@ function clearAuthMessage() {
 }
 
 function hideLoginOverlay() {
-    document.getElementById('loginOverlay').style.display = 'none';
-    document.getElementById('mainApp').style.display = 'block';
+    console.log('hideLoginOverlay called');
+    
+    // Hide both login overlay and auth modal
+    const loginOverlay = document.getElementById('loginOverlay');
+    const authModal = document.getElementById('authModal');
+    const mainApp = document.getElementById('mainApp');
+    
+    console.log('Found elements:', { loginOverlay: !!loginOverlay, authModal: !!authModal, mainApp: !!mainApp });
+    
+    if (loginOverlay) {
+        loginOverlay.style.display = 'none';
+        console.log('Hidden loginOverlay');
+    }
+    if (authModal) {
+        authModal.style.display = 'none';
+        console.log('Hidden authModal');
+    }
+    if (mainApp) {
+        mainApp.style.display = 'block';
+        console.log('Shown mainApp');
+    }
 }
 
 function showLoginOverlay() {
-    document.getElementById('loginOverlay').style.display = 'flex';
-    document.getElementById('mainApp').style.display = 'none';
+    const loginOverlay = document.getElementById('loginOverlay');
+    const authModal = document.getElementById('authModal');
+    const mainApp = document.getElementById('mainApp');
+    
+    if (loginOverlay) loginOverlay.style.display = 'flex';
+    if (authModal) authModal.style.display = 'block';
+    if (mainApp) mainApp.style.display = 'none';
 }
 
 // Handle login form submission
@@ -249,22 +273,32 @@ async function checkAuthStatus() {
 }
 
 function updateUIForLoggedInUser(userData) {
+    console.log('Updating UI for logged in user:', userData);
+    
     // Update navigation links
     const loginLink = document.getElementById('loginLink');
     const logoutLink = document.getElementById('logoutLink');
     const adminLink = document.getElementById('adminLink');
     
-    if (loginLink) loginLink.style.display = 'none';
+    console.log('Found UI elements:', { loginLink: !!loginLink, logoutLink: !!logoutLink, adminLink: !!adminLink });
+    
+    if (loginLink) {
+        loginLink.style.display = 'none';
+        console.log('Hidden login link');
+    }
     if (logoutLink) {
         logoutLink.style.display = 'block';
         logoutLink.innerHTML = `Logout (${userData.username})`;
+        console.log('Shown logout link with username:', userData.username);
     }
     if (adminLink && userData.is_admin) {
         adminLink.style.display = 'block';
+        console.log('Shown admin link for admin user');
     }
     
     // Store user data globally if needed
     window.currentUser = userData;
+    console.log('Stored current user data globally');
 }
 
 // Update the existing handleLogout function to show login overlay

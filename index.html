@@ -853,8 +853,9 @@
         }
 
         // Setup form handlers
-        document.getElementById('loginFormElement').addEventListener('submit', handleLogin);
-        document.getElementById('signupFormElement').addEventListener('submit', handleSignup);
+        // Temporarily disabled to let auth.js handle form submissions
+        // document.getElementById('loginFormElement').addEventListener('submit', handleLogin);
+        // document.getElementById('signupFormElement').addEventListener('submit', handleSignup);
 
         // Update API configuration to include credentials
         const originalApiRequest = apiRequest;
