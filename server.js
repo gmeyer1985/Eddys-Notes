@@ -388,17 +388,9 @@ function initializeDatabase() {
 
 // Authentication middleware
 function requireAuth(req, res, next) {
-    console.log('requireAuth check - URL:', req.url);
-    console.log('requireAuth check - Cookies:', req.headers.cookie);
-    console.log('requireAuth check - Session ID:', req.sessionID);
-    console.log('requireAuth check - Session data:', req.session);
-    console.log('requireAuth check - userId:', req.session.userId);
-    
     if (!req.session.userId) {
-        console.log('Authentication failed - no userId in session');
         return res.status(401).json({ error: 'Authentication required' });
     }
-    console.log('Authentication passed for user ID:', req.session.userId);
     next();
 }
 
@@ -621,74 +613,10 @@ app.get('/api/debug/users', (req, res) => {
     });
 });
 
-// Test endpoint to check session status
-app.get('/api/auth/session-test', (req, res) => {
-    console.log('Session test - Session ID:', req.sessionID);
-    console.log('Session test - Session data:', req.session);
-    res.json({
-        sessionID: req.sessionID,
-        session: req.session,
-        userId: req.session.userId,
-        isAuthenticated: !!req.session.userId
-    });
-});
-
-// Debug endpoint to check all users (admin only)
-app.get('/api/debug/users', requireAdmin, (req, res) => {
-    console.log('Debug: Fetching all users from database');
-    db.all('SELECT id, username, email, first_name, last_name, created_at, last_login FROM users ORDER BY created_at', (err, users) => {
-        if (err) {
-            console.error('Error fetching users:', err);
-            res.status(500).json({ error: err.message });
-        } else {
-            console.log('Debug: Found', users.length, 'users in database');
-            res.json(users);
-        }
-    });
-});
-
-// Emergency endpoint to recreate lost user (admin only)
-app.post('/api/debug/recreate-user', requireAdmin, async (req, res) => {
-    const { username, email, password, firstName, lastName } = req.body;
-    
-    if (!username || !email || !password) {
-        return res.status(400).json({ error: 'Username, email, and password are required' });
-    }
-    
-    console.log('Admin recreating user:', { username, email, firstName, lastName });
-    
-    try {
-        const passwordHash = await bcrypt.hash(password, 10);
-        
-        db.run(
-            'INSERT INTO users (username, email, password_hash, first_name, last_name) VALUES (?, ?, ?, ?, ?)',
-            [username, email, passwordHash, firstName || null, lastName || null],
-            function(err) {
-                if (err) {
-                    console.error('Error recreating user:', err);
-                    res.status(500).json({ error: err.message });
-                } else {
-                    console.log('User recreated successfully with ID:', this.lastID);
-                    res.json({ 
-                        id: this.lastID, 
-                        username, 
-                        email, 
-                        message: 'User recreated successfully' 
-                    });
-                }
-            }
-        );
-    } catch (error) {
-        console.error('Error hashing password:', error);
-        res.status(500).json({ error: 'Failed to recreate user' });
-    }
-});
 
 app.post('/api/auth/login', (req, res) => {
     const { username, password } = req.body;
     console.log('Login attempt for username:', username);
-    console.log('Login request - Cookies:', req.headers.cookie);
-    console.log('Login request - Session ID:', req.sessionID);
 
     if (!username || !password) {
         return res.status(400).json({ error: 'Username and password are required' });
