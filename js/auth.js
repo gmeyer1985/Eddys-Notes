@@ -108,7 +108,9 @@ document.addEventListener('DOMContentLoaded', function() {
         
         try {
             console.log('Making fetch request to /api/auth/login');
-            const response = await fetch('/api/auth/login', {
+            console.log('Request body:', JSON.stringify({ username, password: '***' }));
+            
+            const fetchPromise = fetch('/api/auth/login', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -117,9 +119,31 @@ document.addEventListener('DOMContentLoaded', function() {
                 body: JSON.stringify({ username, password })
             });
             
+            console.log('Fetch promise created, waiting for response...');
+            
+            // Add a timeout to detect hanging requests
+            const timeoutPromise = new Promise((_, reject) => {
+                setTimeout(() => reject(new Error('Request timeout after 10 seconds')), 10000);
+            });
+            
+            console.log('Starting race between fetch and timeout...');
+            
+            const response = await Promise.race([fetchPromise, timeoutPromise]);
             console.log('Response received:', response.status, response.statusText);
-            const data = await response.json();
-            console.log('Response data:', data);
+            console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+            
+            const responseText = await response.text();
+            console.log('Raw response text:', responseText);
+            
+            let data;
+            try {
+                data = JSON.parse(responseText);
+                console.log('Parsed response data:', data);
+            } catch (parseError) {
+                console.error('Failed to parse JSON response:', parseError);
+                console.log('Response was not valid JSON');
+                throw new Error('Server returned invalid JSON response');
+            }
             
             if (response.ok) {
                 showAuthMessage('Login successful!', 'success');
