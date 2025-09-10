@@ -69,6 +69,11 @@ async function saveUserProfile() {
         showProfileStatusMessage('Profile saved successfully!', 'success');
         profilePhotoData = null;
         await loadUserProfile(); // Reload from database
+        
+        // Auto-close modal after successful save
+        setTimeout(() => {
+            closeProfileModal();
+        }, 1500);
     } catch (error) {
         showProfileStatusMessage('Error saving profile: ' + error.message, 'error');
         console.error('Profile save error:', error);
