@@ -12,6 +12,17 @@ const { v4: uuidv4 } = require('uuid');
 // Application-level locks to prevent concurrent signups
 const signupLocks = new Map();
 
+// Cleanup function for stuck locks (safety mechanism)
+setInterval(() => {
+    const now = Date.now();
+    for (const [email, lockData] of signupLocks.entries()) {
+        if (typeof lockData === 'object' && now - lockData.timestamp > 30000) { // 30 seconds
+            console.log('WARNING: Cleaning up stuck signup lock for:', email);
+            signupLocks.delete(email);
+        }
+    }
+}, 10000); // Check every 10 seconds
+
 const app = express();
 const PORT = process.env.PORT || 3004;
 const NODE_ENV = process.env.NODE_ENV || 'development';
@@ -57,7 +68,10 @@ const sessionConfig = {
     }
 };
 
-// Use Redis store in production if available
+// Temporarily use MemoryStore to troubleshoot session issues
+console.log('Using MemoryStore for sessions (troubleshooting mode)');
+// Commented out Redis store temporarily
+/*
 if (NODE_ENV === 'production' && RedisStore && redisClient) {
     sessionConfig.store = new RedisStore({
         client: redisClient,
@@ -67,6 +81,7 @@ if (NODE_ENV === 'production' && RedisStore && redisClient) {
 } else {
     console.log('Using MemoryStore for sessions (development mode)');
 }
+*/
 
 app.use(session(sessionConfig));
 
@@ -458,8 +473,8 @@ app.post('/api/auth/signup', async (req, res) => {
             });
         }
         
-        // Set lock for this email
-        signupLocks.set(lockKey, true);
+        // Set lock for this email with timestamp
+        signupLocks.set(lockKey, { timestamp: Date.now() });
         console.log('Set signup lock for:', email);
         
         // Cleanup function to remove lock
@@ -549,12 +564,17 @@ app.post('/api/auth/signup', async (req, res) => {
                         console.log('DEBUG: Session ID after signup:', req.sessionID);
                         
                         // Force session save and wait for it
+                        console.log('DEBUG: About to save session...');
                         req.session.save((saveErr) => {
                             if (saveErr) {
                                 console.error('DEBUG: Session save error:', saveErr);
-                                return res.status(500).json({ error: 'Failed to save session' });
+                                console.error('DEBUG: Session save error details:', JSON.stringify(saveErr, null, 2));
+                                // Still respond with success, but log the session issue
+                            } else {
+                                console.log('DEBUG: Session saved successfully');
                             }
-                            console.log('DEBUG: Session saved successfully');
+                            
+                            console.log('DEBUG: Final session check - userId:', req.session.userId);
                             res.json({ 
                                 id: this.lastID, 
                                 username: username, 
