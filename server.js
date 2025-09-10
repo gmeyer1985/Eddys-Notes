@@ -27,9 +27,12 @@ const app = express();
 const PORT = process.env.PORT || 3004;
 const NODE_ENV = process.env.NODE_ENV || 'development';
 
+// Temporarily disable Redis to use MemoryStore for session stability
 // Redis session store for production
 let RedisStore, redisClient;
-if (NODE_ENV === 'production') {
+const DISABLE_REDIS = true; // Temporarily force MemoryStore
+
+if (NODE_ENV === 'production' && !DISABLE_REDIS) {
     try {
         RedisStore = require('connect-redis').default;
         const { createClient } = require('redis');
@@ -57,6 +60,8 @@ if (NODE_ENV === 'production') {
     } catch (error) {
         console.warn('Redis not available, falling back to MemoryStore:', error.message);
     }
+} else {
+    console.log('Redis disabled for debugging, using MemoryStore');
 }
 const SESSION_SECRET = process.env.SESSION_SECRET || 'fishing-log-secret-key-' + uuidv4();
 
@@ -83,16 +88,8 @@ const sessionConfig = {
     }
 };
 
-// Use Redis store in production if available
-if (NODE_ENV === 'production' && RedisStore && redisClient) {
-    sessionConfig.store = new RedisStore({
-        client: redisClient,
-        prefix: 'fishing-log:'
-    });
-    console.log('Using Redis session store');
-} else {
-    console.log('Using MemoryStore for sessions (development mode)');
-}
+// Always use MemoryStore for now (Redis is disabled)
+console.log('Using MemoryStore for sessions (Redis temporarily disabled)');
 
 app.use(session(sessionConfig));
 
