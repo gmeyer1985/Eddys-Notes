@@ -1220,9 +1220,17 @@ app.post('/api/auth/delete-account', requireAuth, async (req, res) => {
     }
 });
 
-// Rivers
+// Rivers - include user's rivers plus system-wide rivers (admin rivers)
 app.get('/api/rivers', requireAuth, (req, res) => {
-    db.all('SELECT * FROM rivers WHERE user_id = ? ORDER BY river_name', [req.session.userId], (err, rows) => {
+    const sql = `
+        SELECT *, 
+               CASE WHEN user_id = 1 THEN 1 ELSE 0 END as is_system_river
+        FROM rivers 
+        WHERE user_id = ? OR user_id = 1 
+        ORDER BY is_system_river DESC, river_name
+    `;
+    
+    db.all(sql, [req.session.userId], (err, rows) => {
         if (err) {
             res.status(500).json({ error: err.message });
         } else {
@@ -1333,6 +1341,104 @@ app.post('/api/debug/add-usgs-sites', requireAdmin, async (req, res) => {
         results: results,
         summary: {
             total: siteNumbers.length,
+            added: results.filter(r => r.status === 'added').length,
+            skipped: results.filter(r => r.status === 'skipped').length,
+            errors: results.filter(r => r.status === 'error').length
+        }
+    });
+});
+
+// Quick endpoint to add the requested USGS sites system-wide (admin only)
+app.post('/api/debug/add-requested-sites', requireAdmin, async (req, res) => {
+    const allSites = [
+        // Original batch
+        "05356000","05356500","05367055","05366800","05365550","05365500","05369500","05371200",
+        // New batch
+        "05357500","05358330","05359500","05360000","05360490","05360500",
+        "05357157","05357302","05357335","05357295","053572942",
+        "05380806","05381000","05381360","053813595","05382000","05382220",
+        "05404000","05400760","05407000","05398000","05398100","05395000"
+    ];
+    
+    console.log('Adding', allSites.length, 'USGS sites to admin account (system-wide)');
+    
+    const results = [];
+    
+    for (const siteNumber of allSites) {
+        try {
+            console.log('Processing USGS site:', siteNumber);
+            
+            // Check if site already exists for admin user
+            const existing = await new Promise((resolve, reject) => {
+                db.get('SELECT id FROM rivers WHERE user_id = 1 AND site_number = ?', 
+                    [siteNumber], (err, row) => {
+                    if (err) reject(err);
+                    else resolve(row);
+                });
+            });
+            
+            if (existing) {
+                console.log('Site', siteNumber, 'already exists, skipping');
+                results.push({ siteNumber, status: 'skipped', reason: 'already exists' });
+                continue;
+            }
+            
+            // Fetch site info from USGS API
+            const usgsUrl = `https://waterservices.usgs.gov/nwis/site/?format=json&sites=${siteNumber}&siteOutput=expanded`;
+            
+            let siteData;
+            try {
+                const response = await fetch(usgsUrl);
+                const data = await response.json();
+                siteData = data.value?.timeSeries?.[0]?.sourceInfo || null;
+            } catch (fetchError) {
+                console.warn('Could not fetch USGS data for', siteNumber, ':', fetchError.message);
+                siteData = null;
+            }
+            
+            // Use USGS data if available, otherwise use defaults
+            const riverName = siteData?.siteName || `USGS Site ${siteNumber}`;
+            const location = siteData?.geoLocation?.geogLocation 
+                ? `${siteData.geoLocation.geogLocation.latitude}, ${siteData.geoLocation.geogLocation.longitude}`
+                : 'Location TBD';
+            
+            // Insert into database as admin user (system-wide)
+            await new Promise((resolve, reject) => {
+                const sql = `INSERT INTO rivers (user_id, site_number, river_name, location, current_flow, last_updated)
+                           VALUES (1, ?, ?, ?, ?, CURRENT_TIMESTAMP)`;
+                
+                db.run(sql, [siteNumber, riverName, location, null], function(err) {
+                    if (err) reject(err);
+                    else {
+                        console.log('✅ Added system site', siteNumber, 'as ID', this.lastID);
+                        resolve(this.lastID);
+                    }
+                });
+            });
+            
+            results.push({ 
+                siteNumber, 
+                status: 'added', 
+                riverName, 
+                location 
+            });
+            
+        } catch (error) {
+            console.error('Error processing site', siteNumber, ':', error);
+            results.push({ 
+                siteNumber, 
+                status: 'error', 
+                error: error.message 
+            });
+        }
+    }
+    
+    console.log('System-wide USGS site addition complete');
+    res.json({ 
+        message: 'System-wide USGS sites added to admin account',
+        results: results,
+        summary: {
+            total: allSites.length,
             added: results.filter(r => r.status === 'added').length,
             skipped: results.filter(r => r.status === 'skipped').length,
             errors: results.filter(r => r.status === 'error').length
