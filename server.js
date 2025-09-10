@@ -9,6 +9,9 @@ const bcrypt = require('bcryptjs');
 const session = require('express-session');
 const { v4: uuidv4 } = require('uuid');
 
+// Application-level locks to prevent concurrent signups
+const signupLocks = new Map();
+
 const app = express();
 const PORT = process.env.PORT || 3004;
 const NODE_ENV = process.env.NODE_ENV || 'development';
@@ -446,7 +449,26 @@ app.post('/api/auth/signup', async (req, res) => {
     try {
         console.log('Signup attempt - Username:', username, 'Email:', email);
         
-        // Use database serialization to prevent race conditions
+        // Check if signup is already in progress for this email
+        const lockKey = email.toLowerCase();
+        if (signupLocks.has(lockKey)) {
+            console.log('Signup already in progress for:', email);
+            return res.status(400).json({ 
+                error: 'A signup request is already being processed for this email address. Please wait a moment and try again.' 
+            });
+        }
+        
+        // Set lock for this email
+        signupLocks.set(lockKey, true);
+        console.log('Set signup lock for:', email);
+        
+        // Cleanup function to remove lock
+        const cleanupLock = () => {
+            signupLocks.delete(lockKey);
+            console.log('Removed signup lock for:', email);
+        };
+        
+        // Use database serialization for proper operation ordering
         db.serialize(() => {
 
             // Single query to check both username and email
@@ -457,6 +479,7 @@ app.post('/api/auth/signup', async (req, res) => {
             db.get(checkQuery, [username, email], async (err, existingUser) => {
                 if (err) {
                     console.error('Database error during user existence check:', err);
+                    cleanupLock();
                     return res.status(500).json({ error: 'Database error occurred' });
                 }
 
@@ -464,6 +487,7 @@ app.post('/api/auth/signup', async (req, res) => {
 
                 if (existingUser) {
                     console.log('Duplicate found - Existing user:', existingUser);
+                    cleanupLock();
                     
                     if (existingUser.email.toLowerCase() === email.toLowerCase()) {
                         return res.status(400).json({ 
@@ -482,6 +506,7 @@ app.post('/api/auth/signup', async (req, res) => {
                 bcrypt.hash(password, 10, (hashErr, passwordHash) => {
                     if (hashErr) {
                         console.error('Password hashing error:', hashErr);
+                        cleanupLock();
                         return res.status(500).json({ error: 'Failed to process account creation. Please try again.' });
                     }
 
@@ -495,6 +520,7 @@ app.post('/api/auth/signup', async (req, res) => {
                     db.run(sql, [username, email, passwordHash, firstName || null, lastName || null, state || null], function(err) {
                         if (err) {
                             console.error('Database error during user creation:', err);
+                            cleanupLock();
                             
                             // Handle specific SQLite constraint errors (fallback safety)
                             if (err.message.includes('UNIQUE constraint failed: users.email')) {
@@ -516,6 +542,7 @@ app.post('/api/auth/signup', async (req, res) => {
 
                         console.log('DEBUG: User creation successful!');
                         console.log('New user created successfully:', username, 'with ID:', this.lastID);
+                        cleanupLock();
                         req.session.userId = this.lastID;
                         req.session.username = username;
                         res.json({ 
@@ -529,6 +556,12 @@ app.post('/api/auth/signup', async (req, res) => {
             });
         });
     } catch (error) {
+        // Cleanup lock on any uncaught error
+        const lockKey = email?.toLowerCase();
+        if (lockKey && signupLocks.has(lockKey)) {
+            signupLocks.delete(lockKey);
+            console.log('Cleaned up signup lock on error for:', email);
+        }
         res.status(500).json({ error: error.message });
     }
 });
