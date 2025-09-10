@@ -80,7 +80,7 @@ const sessionConfig = {
     resave: false,
     saveUninitialized: false,
     cookie: { 
-        secure: NODE_ENV === 'production', // Use secure cookies in production
+        secure: false, // Temporarily disable secure to test cookie issues
         maxAge: 24 * 60 * 60 * 1000, // 24 hours
         sameSite: 'lax', // Use lax for compatibility
         httpOnly: true, // Security: prevent XSS
@@ -388,6 +388,8 @@ function initializeDatabase() {
 
 // Authentication middleware
 function requireAuth(req, res, next) {
+    console.log('requireAuth check - URL:', req.url);
+    console.log('requireAuth check - Cookies:', req.headers.cookie);
     console.log('requireAuth check - Session ID:', req.sessionID);
     console.log('requireAuth check - Session data:', req.session);
     console.log('requireAuth check - userId:', req.session.userId);
@@ -634,6 +636,8 @@ app.get('/api/auth/session-test', (req, res) => {
 app.post('/api/auth/login', (req, res) => {
     const { username, password } = req.body;
     console.log('Login attempt for username:', username);
+    console.log('Login request - Cookies:', req.headers.cookie);
+    console.log('Login request - Session ID:', req.sessionID);
 
     if (!username || !password) {
         return res.status(400).json({ error: 'Username and password are required' });
