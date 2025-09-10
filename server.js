@@ -446,41 +446,39 @@ app.post('/api/auth/signup', async (req, res) => {
     try {
         console.log('Signup attempt - Username:', username, 'Email:', email);
         
-        // Check if user already exists - use separate queries for better debugging
-        db.get('SELECT id, username, email FROM users WHERE LOWER(email) = LOWER(?)', [email], async (err, emailRow) => {
-            if (err) {
-                console.error('Database error during email check:', err);
-                res.status(500).json({ error: 'Database error occurred' });
-                return;
-            }
-
-            if (emailRow) {
-                console.log('Duplicate email found:', emailRow.email, 'for user:', emailRow.username);
-                res.status(400).json({ error: 'An account with this email address already exists. Please try logging in instead.' });
-                return;
-            }
-
-            // Check username separately
-            db.get('SELECT id, username FROM users WHERE LOWER(username) = LOWER(?)', [username], async (err, usernameRow) => {
+        // Use database serialization to prevent race conditions
+        db.serialize(() => {
+            // Single query to check both username and email
+            db.get('SELECT id, username, email FROM users WHERE LOWER(username) = LOWER(?) OR LOWER(email) = LOWER(?)', 
+                   [username, email], async (err, existingUser) => {
                 if (err) {
-                    console.error('Database error during username check:', err);
-                    res.status(500).json({ error: 'Database error occurred' });
-                    return;
+                    console.error('Database error during user existence check:', err);
+                    return res.status(500).json({ error: 'Database error occurred' });
                 }
 
-                if (usernameRow) {
-                    console.log('Duplicate username found:', usernameRow.username);
-                    res.status(400).json({ error: 'This username is already taken. Please choose a different username.' });
-                    return;
+                if (existingUser) {
+                    console.log('Duplicate found - Existing user:', existingUser);
+                    if (existingUser.email.toLowerCase() === email.toLowerCase()) {
+                        return res.status(400).json({ 
+                            error: 'An account with this email address already exists. Please try logging in instead.' 
+                        });
+                    } else {
+                        return res.status(400).json({ 
+                            error: 'This username is already taken. Please choose a different username.' 
+                        });
+                    }
                 }
 
                 console.log('No duplicates found, proceeding with user creation...');
 
-                try {
-                    // Hash password
-                    const passwordHash = await bcrypt.hash(password, 10);
+                // Hash password and create user in the same serialized transaction
+                bcrypt.hash(password, 10, (hashErr, passwordHash) => {
+                    if (hashErr) {
+                        console.error('Password hashing error:', hashErr);
+                        return res.status(500).json({ error: 'Failed to process account creation. Please try again.' });
+                    }
 
-                    // Create user
+                    // Create user within the serialized block to prevent race conditions
                     const sql = `INSERT INTO users (username, email, password_hash, first_name, last_name, state)
                                  VALUES (?, ?, ?, ?, ?, ?)`;
 
@@ -488,32 +486,35 @@ app.post('/api/auth/signup', async (req, res) => {
                         if (err) {
                             console.error('Database error during user creation:', err);
                             
-                            // Handle specific SQLite constraint errors
+                            // Handle specific SQLite constraint errors (fallback safety)
                             if (err.message.includes('UNIQUE constraint failed: users.email')) {
-                                res.status(400).json({ error: 'An account with this email address already exists. Please try logging in instead.' });
+                                return res.status(400).json({ 
+                                    error: 'An account with this email address already exists. Please try logging in instead.' 
+                                });
                             } else if (err.message.includes('UNIQUE constraint failed: users.username')) {
-                                res.status(400).json({ error: 'This username is already taken. Please choose a different username.' });
+                                return res.status(400).json({ 
+                                    error: 'This username is already taken. Please choose a different username.' 
+                                });
                             } else if (err.message.includes('UNIQUE constraint failed')) {
-                                res.status(400).json({ error: 'This username or email is already in use. Please try different values.' });
+                                return res.status(400).json({ 
+                                    error: 'This username or email is already in use. Please try different values.' 
+                                });
                             } else {
-                                res.status(500).json({ error: 'Failed to create account. Please try again.' });
+                                return res.status(500).json({ error: 'Failed to create account. Please try again.' });
                             }
-                        } else {
-                            console.log('New user created successfully:', username);
-                            req.session.userId = this.lastID;
-                            req.session.username = username;
-                            res.json({ 
-                                id: this.lastID, 
-                                username: username, 
-                                email: email,
-                                message: 'Account created successfully!' 
-                            });
                         }
+
+                        console.log('New user created successfully:', username, 'with ID:', this.lastID);
+                        req.session.userId = this.lastID;
+                        req.session.username = username;
+                        res.json({ 
+                            id: this.lastID, 
+                            username: username, 
+                            email: email,
+                            message: 'Account created successfully!' 
+                        });
                     });
-                } catch (hashError) {
-                    console.error('Password hashing error:', hashError);
-                    res.status(500).json({ error: 'Failed to process account creation. Please try again.' });
-                }
+                });
             });
         });
     } catch (error) {
