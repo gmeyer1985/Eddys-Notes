@@ -545,6 +545,8 @@ app.post('/api/auth/signup', async (req, res) => {
                         cleanupLock();
                         req.session.userId = this.lastID;
                         req.session.username = username;
+                        console.log('DEBUG: Set session - userId:', req.session.userId, 'username:', req.session.username);
+                        console.log('DEBUG: Session ID after signup:', req.sessionID);
                         res.json({ 
                             id: this.lastID, 
                             username: username, 
@@ -641,6 +643,10 @@ app.post('/api/auth/logout', (req, res) => {
 });
 
 app.get('/api/auth/user', (req, res) => {
+    console.log('DEBUG: /api/auth/user - Session ID:', req.sessionID);
+    console.log('DEBUG: /api/auth/user - Session data:', req.session);
+    console.log('DEBUG: /api/auth/user - User ID in session:', req.session.userId);
+    
     if (!req.session.userId) {
         return res.status(401).json({ error: 'Not authenticated' });
     }
