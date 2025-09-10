@@ -1245,6 +1245,101 @@ app.get('/api/debug/rivers', requireAdmin, (req, res) => {
     });
 });
 
+// Bulk add USGS sites endpoint (admin only)
+app.post('/api/debug/add-usgs-sites', requireAdmin, async (req, res) => {
+    const { siteNumbers, userId } = req.body;
+    
+    if (!siteNumbers || !Array.isArray(siteNumbers)) {
+        return res.status(400).json({ error: 'siteNumbers array is required' });
+    }
+    
+    const targetUserId = userId || req.session.userId;
+    console.log('Adding USGS sites for user ID:', targetUserId);
+    
+    const results = [];
+    
+    for (const siteNumber of siteNumbers) {
+        try {
+            console.log('Processing USGS site:', siteNumber);
+            
+            // Check if site already exists for this user
+            const existing = await new Promise((resolve, reject) => {
+                db.get('SELECT id FROM rivers WHERE user_id = ? AND site_number = ?', 
+                    [targetUserId, siteNumber], (err, row) => {
+                    if (err) reject(err);
+                    else resolve(row);
+                });
+            });
+            
+            if (existing) {
+                console.log('Site', siteNumber, 'already exists, skipping');
+                results.push({ siteNumber, status: 'skipped', reason: 'already exists' });
+                continue;
+            }
+            
+            // Fetch site info from USGS API
+            const usgsUrl = `https://waterservices.usgs.gov/nwis/site/?format=json&sites=${siteNumber}&siteOutput=expanded`;
+            
+            let siteData;
+            try {
+                const response = await fetch(usgsUrl);
+                const data = await response.json();
+                siteData = data.value?.timeSeries?.[0]?.sourceInfo || null;
+            } catch (fetchError) {
+                console.warn('Could not fetch USGS data for', siteNumber, ':', fetchError.message);
+                siteData = null;
+            }
+            
+            // Use USGS data if available, otherwise use defaults
+            const riverName = siteData?.siteName || `USGS Site ${siteNumber}`;
+            const location = siteData?.geoLocation?.geogLocation 
+                ? `${siteData.geoLocation.geogLocation.latitude}, ${siteData.geoLocation.geogLocation.longitude}`
+                : 'Location TBD';
+            
+            // Insert into database
+            await new Promise((resolve, reject) => {
+                const sql = `INSERT INTO rivers (user_id, site_number, river_name, location, current_flow, last_updated)
+                           VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`;
+                
+                db.run(sql, [targetUserId, siteNumber, riverName, location, null], function(err) {
+                    if (err) reject(err);
+                    else {
+                        console.log('✅ Added site', siteNumber, 'as ID', this.lastID);
+                        resolve(this.lastID);
+                    }
+                });
+            });
+            
+            results.push({ 
+                siteNumber, 
+                status: 'added', 
+                riverName, 
+                location 
+            });
+            
+        } catch (error) {
+            console.error('Error processing site', siteNumber, ':', error);
+            results.push({ 
+                siteNumber, 
+                status: 'error', 
+                error: error.message 
+            });
+        }
+    }
+    
+    console.log('Bulk USGS site addition complete');
+    res.json({ 
+        message: 'Bulk site addition complete',
+        results: results,
+        summary: {
+            total: siteNumbers.length,
+            added: results.filter(r => r.status === 'added').length,
+            skipped: results.filter(r => r.status === 'skipped').length,
+            errors: results.filter(r => r.status === 'error').length
+        }
+    });
+});
+
 app.post('/api/rivers', requireAuth, (req, res) => {
     const { site_number, river_name, location, current_flow } = req.body;
 
