@@ -388,9 +388,15 @@ function initializeDatabase() {
 
 // Authentication middleware
 function requireAuth(req, res, next) {
+    console.log('requireAuth check - Session ID:', req.sessionID);
+    console.log('requireAuth check - Session data:', req.session);
+    console.log('requireAuth check - userId:', req.session.userId);
+    
     if (!req.session.userId) {
+        console.log('Authentication failed - no userId in session');
         return res.status(401).json({ error: 'Authentication required' });
     }
+    console.log('Authentication passed for user ID:', req.session.userId);
     next();
 }
 
@@ -610,6 +616,18 @@ app.get('/api/debug/users', (req, res) => {
             console.log('Found users:', rows);
             res.json(rows);
         }
+    });
+});
+
+// Test endpoint to check session status
+app.get('/api/auth/session-test', (req, res) => {
+    console.log('Session test - Session ID:', req.sessionID);
+    console.log('Session test - Session data:', req.session);
+    res.json({
+        sessionID: req.sessionID,
+        session: req.session,
+        userId: req.session.userId,
+        isAuthenticated: !!req.session.userId
     });
 });
 
