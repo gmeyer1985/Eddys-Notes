@@ -172,10 +172,21 @@ function createLicenseCard(license, index) {
         '</div>' +
         (documentPreview ? '<div style="text-align: center; margin: 10px 0;">' + documentPreview + '</div>' : '') +
         '<div class="license-actions">' +
-            '<button class="btn btn-primary" onclick="editLicense(' + index + ')">Edit</button>' +
-            '<button class="btn btn-danger" onclick="deleteLicense(' + index + ')">Delete</button>' +
+            '<button class="icon-btn icon-btn-edit" onclick="editLicense(' + index + ')" title="Edit License">' +
+            '<i data-lucide="edit-3"></i>' +
+            '</button>' +
+            '<button class="icon-btn icon-btn-delete" onclick="deleteLicense(' + index + ')" title="Delete License">' +
+            '<i data-lucide="trash-2"></i>' +
+            '</button>' +
         '</div>' +
     '</div>';
+    
+    // Initialize Lucide icons after content is added
+    setTimeout(() => {
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+    }, 100);
 }
 
 function isLicenseExpiringSoon(endDate) {

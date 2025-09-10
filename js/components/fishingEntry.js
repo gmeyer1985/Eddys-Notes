@@ -303,8 +303,14 @@ function renderTable() {
             '<td>' + (entry.fliesUsed || 'Not specified') + '</td>' +
             '<td>' + (entry.targetSpecies || 'Not specified') + '</td>' +
             '<td>' + (entry.angler || 'Unknown') + '</td>' +
-            '<td><button class="btn btn-primary" onclick="editEntry(' + i + ')" style="margin-right: 5px; padding: 5px 10px; font-size: 12px;">Edit</button>' +
-            '<button class="btn btn-danger" onclick="deleteEntry(' + i + ')" style="padding: 5px 10px; font-size: 12px;">Delete</button></td>';
+            '<td class="actions-cell">' +
+            '<button class="icon-btn icon-btn-edit" onclick="editEntry(' + i + ')" title="Edit Entry">' +
+            '<i data-lucide="edit-3"></i>' +
+            '</button>' +
+            '<button class="icon-btn icon-btn-delete" onclick="deleteEntry(' + i + ')" title="Delete Entry">' +
+            '<i data-lucide="trash-2"></i>' +
+            '</button>' +
+            '</td>';
         
         tbody.appendChild(row);
         
@@ -384,12 +390,21 @@ function renderTable() {
                     (entry.notes ? '<div class="card-section"><div class="notes"><span class="label">Notes:</span><p>' + entry.notes + '</p></div></div>' : '') +
                 '</div>' +
                 '<div class="card-actions">' +
-                    '<button class="btn btn-primary" onclick="editEntry(' + i + ')">Edit</button>' +
-                    '<button class="btn btn-danger" onclick="deleteEntry(' + i + ')">Delete</button>' +
+                    '<button class="icon-btn icon-btn-edit" onclick="editEntry(' + i + ')" title="Edit Entry">' +
+                    '<i data-lucide="edit-3"></i>' +
+                    '</button>' +
+                    '<button class="icon-btn icon-btn-delete" onclick="deleteEntry(' + i + ')" title="Delete Entry">' +
+                    '<i data-lucide="trash-2"></i>' +
+                    '</button>' +
                 '</div>';
                 
             mobileContainer.appendChild(card);
         }
+    }
+    
+    // Initialize Lucide icons after table is populated
+    if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
     }
 }
 

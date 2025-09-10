@@ -1149,6 +1149,55 @@
             box-shadow: 0 4px 12px rgba(44, 62, 45, 0.1);
         }
 
+        /* Icon Button Styles */
+        .icon-btn {
+            background: none;
+            border: 1px solid transparent;
+            padding: 8px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 2px;
+            width: 32px;
+            height: 32px;
+        }
+
+        .icon-btn i {
+            width: 16px;
+            height: 16px;
+            stroke-width: 2;
+        }
+
+        .icon-btn-edit {
+            color: #355E3B;
+            border-color: rgba(53, 94, 59, 0.2);
+        }
+
+        .icon-btn-edit:hover {
+            background: rgba(53, 94, 59, 0.1);
+            border-color: #355E3B;
+            transform: translateY(-1px);
+        }
+
+        .icon-btn-delete {
+            color: #B22222;
+            border-color: rgba(178, 34, 34, 0.2);
+        }
+
+        .icon-btn-delete:hover {
+            background: rgba(178, 34, 34, 0.1);
+            border-color: #B22222;
+            transform: translateY(-1px);
+        }
+
+        .actions-cell {
+            white-space: nowrap;
+            text-align: center;
+        }
+
         tr:nth-child(even) {
             background: rgba(230, 215, 193, 0.3);
         }
