@@ -1261,17 +1261,32 @@
             width: 100%;
             margin: 0;
             z-index: 1;
+            min-height: 40px; /* Ensure consistent height */
+        }
+        
+        .time-input-group input[type="time"] {
+            height: 40px; /* Explicit height for time inputs */
+            box-sizing: border-box;
+            margin: 0;
         }
 
         /* Ensure time inputs don't overlap with other form elements */
         .form-group.time-on-water {
             position: relative;
             z-index: 2;
-            margin-bottom: 20px;
+            margin-bottom: 25px; /* Increased margin to prevent overlap */
+            padding-bottom: 10px; /* Additional padding for Chrome */
         }
         
         .form-group.time-on-water .time-input-group {
             position: relative;
+            margin-bottom: 10px; /* Ensure space below time inputs */
+        }
+        
+        /* Chrome-specific fix for time input overlap */
+        .form-group.time-on-water + .form-group {
+            margin-top: 15px; /* Extra space above the following form group */
+            clear: both; /* Ensure no floating elements interfere */
         }
 
         .actions {
