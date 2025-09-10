@@ -112,23 +112,63 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage: storage, limits: { fileSize: 10 * 1024 * 1024 } });
 
-// Initialize SQLite database - use persistent volume in production
+// Safe database migration logic for volume implementation
 const isProduction = process.env.NODE_ENV === 'production';
-const dbPath = isProduction 
-    ? path.join('/app/data', 'fishing_log.db')  // Persistent volume path
-    : 'fishing_log.db';                         // Local development path
+const oldDbPath = 'fishing_log.db';                        // Current location
 
-console.log('Database path:', dbPath);
+// Migration function to safely move database to volume
+function migrateToVolumeSync() {
+    const newDbPath = isProduction && process.env.USE_VOLUME 
+        ? '/data/fishing_log.db'                           // Volume path (only when explicitly enabled)
+        : 'fishing_log.db';                                // Default path
 
-// Ensure the data directory exists in production
-if (isProduction) {
-    const dataDir = path.dirname(dbPath);
-    if (!fs.existsSync(dataDir)) {
-        console.log('Creating data directory:', dataDir);
-        fs.mkdirSync(dataDir, { recursive: true });
+    console.log('Target database path:', newDbPath);
+
+    if (isProduction && process.env.USE_VOLUME && newDbPath !== oldDbPath) {
+        console.log('🔄 Volume migration mode enabled');
+        
+        // Check if old database exists and new location is empty
+        if (fs.existsSync(oldDbPath) && !fs.existsSync(newDbPath)) {
+            console.log('📦 Migrating database from', oldDbPath, 'to', newDbPath);
+            
+            try {
+                // Ensure volume directory exists
+                const volumeDir = path.dirname(newDbPath);
+                if (!fs.existsSync(volumeDir)) {
+                    console.log('Creating volume directory:', volumeDir);
+                    fs.mkdirSync(volumeDir, { recursive: true });
+                }
+                
+                // Copy database to new location
+                fs.copyFileSync(oldDbPath, newDbPath);
+                console.log('✅ Database successfully migrated to volume');
+                
+                // Keep old database as backup for one deployment
+                const backupPath = oldDbPath + '.backup';
+                fs.renameSync(oldDbPath, backupPath);
+                console.log('📦 Original database backed up to:', backupPath);
+                
+                return newDbPath;
+                
+            } catch (error) {
+                console.error('❌ Migration failed:', error);
+                console.log('⚠️ Continuing with original database location');
+                return oldDbPath; // Fallback to original location
+            }
+        } else if (fs.existsSync(newDbPath)) {
+            console.log('📁 Volume database already exists, using it');
+            return newDbPath;
+        }
     }
+    
+    return newDbPath;
 }
 
+// Get final database path after potential migration
+const dbPath = migrateToVolumeSync();
+console.log('Final database path:', dbPath);
+
+// Initialize SQLite database
 const db = new sqlite3.Database(dbPath, (err) => {
     if (err) {
         console.error('Error opening database:', err);
