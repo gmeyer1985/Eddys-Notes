@@ -1,0 +1,3267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fishing Log</title>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue:wght@400&family=Roboto+Condensed:wght@400;700&display=swap" rel="stylesheet">
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" 
+          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" 
+          crossorigin=""/>
+    
+    <!-- Leaflet JavaScript -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" 
+            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" 
+            crossorigin=""></script>
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- External Stylesheet -->
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header-container">
+            <!-- Hamburger Menu -->
+            <div class="hamburger-menu" onclick="toggleMenu()">
+                <div class="hamburger-line"></div>
+                <div class="hamburger-line"></div>
+                <div class="hamburger-line"></div>
+            </div>
+            
+            <!-- Navigation Menu -->
+            <div class="nav-menu" id="navMenu">
+                <a href="#" onclick="showProfileModal(); closeMenu();">My Profile</a>
+                <a href="#" onclick="showRiverFlowModal(); closeMenu();">River Flow</a>
+                <a href="#" onclick="showLicenseLibraryModal(); closeMenu();">License Library</a>
+                <a href="#" onclick="showAddModal(); closeMenu();">Add New Entry</a>
+                <a href="#" onclick="clearFilters(); closeMenu();">Clear Filters</a>
+                <a href="#" onclick="exportData(); closeMenu();">Export Data</a>
+                <a href="#" onclick="importData(); closeMenu();">Import Data</a>
+                <a href="#" onclick="showAbout(); closeMenu();">About</a>
+                <a href="/admin" id="adminLink" style="display: none; color: #ffa500;" onclick="closeMenu();">🛡️ Admin Panel</a>
+                <a href="#" onclick="handleLogout(); closeMenu();" id="logoutLink" style="display: none; color: #ff6b6b;">Logout</a>
+            </div>
+            
+            <h1>
+                <img src="art/eddysNotesLogo.png" alt="Eddy's Notes Logo">
+                <span>Eddy's Notes</span>
+            </h1>
+        </div>
+        
+        <div class="controls">
+            <div class="filter-group">
+                <label for="filterDate">Filter by Date:</label>
+                <input type="date" id="filterDate">
+            </div>
+            <div class="filter-group">
+                <label for="filterAngler">Filter by Angler:</label>
+                <select id="filterAngler">
+                    <option value="">All Anglers</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="filterSpecies">Filter by Species:</label>
+                <select id="filterSpecies">
+                    <option value="">All Species</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="searchNotes">Search Notes:</label>
+                <input type="text" id="searchNotes" placeholder="Search in notes...">
+            </div>
+            <div class="filter-group">
+                <button class="btn btn-primary" onclick="clearFilters()">Clear Filters</button>
+            </div>
+            <div class="filter-group">
+                <button class="btn btn-success" onclick="showAddModal()">Add New Entry</button>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <table id="fishingTable">
+                <thead>
+                    <tr>
+                        <th>City, State</th>
+                        <th>Date</th>
+                        <th>Time on Water</th>
+                        <th>Location</th>
+                        <th>Air Temp (°F)</th>
+                        <th>Barometric Pressure (inHg)</th>
+                        <th>Water Temp (°F)</th>
+                        <th>Moon Phase</th>
+                        <th>River/Stream</th>
+                        <th>Flow (CFS)</th>
+                        <th>Wind</th>
+                        <th>Notes</th>
+                        <th>Flies Used</th>
+                        <th>Target Species</th>
+                        <th>Angler</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="fishingTableBody">
+                    <!-- Data will be populated here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Add/Edit Modal -->
+    <div id="entryModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <h2 id="modalTitle">Add New Fishing Entry</h2>
+            <div class="status-message" id="statusMessage"></div>
+            
+            <form id="fishingForm">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="entryDate">Date *</label>
+                        <input type="date" id="entryDate" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="cityState">City, State *</label>
+                        <input type="text" id="cityState" placeholder="Minneapolis, MN" required oninput="searchCityState()">
+                        <div id="cityStateResults" style="display: none; max-height: 150px; overflow-y: auto; border: 1px solid rgba(139, 69, 19, 0.5); border-radius: 4px; margin-top: 5px; background: rgba(0, 0, 0, 0.9); position: relative; z-index: 100;"></div>
+                        <input type="hidden" id="selectedLat">
+                        <input type="hidden" id="selectedLon">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Time on Water</label>
+                        <div class="time-input-group">
+                            <input type="time" id="startTime" placeholder="Start Time">
+                            <input type="time" id="endTime" placeholder="End Time">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="waterTemp">Water Temperature (°F)</label>
+                        <input type="number" id="waterTemp" placeholder="65">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="riverSearch">River/Stream Name</label>
+                        <input type="text" id="riverSearch" placeholder="Search for river or stream..." oninput="searchRiversForEntry()">
+                        <div id="riverResults" style="display: none; max-height: 150px; overflow-y: auto; border: 1px solid rgba(139, 69, 19, 0.5); border-radius: 4px; margin-top: 5px; background: rgba(0, 0, 0, 0.9); position: relative; z-index: 100;"></div>
+                        <input type="hidden" id="selectedSiteNumber">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="waterFlow">Current Flow (CFS)</label>
+                        <input type="text" id="waterFlow" readonly placeholder="Select river to get flow data">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="targetSpecies">Target Species</label>
+                        <input type="text" id="targetSpecies" placeholder="e.g., Rainbow Trout">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="angler">Angler</label>
+                        <input type="text" id="angler" placeholder="Angler name">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="fliesUsed">Flies Used</label>
+                        <input type="text" id="fliesUsed" placeholder="e.g., Adams, Blue Winged Olive">
+                    </div>
+                    
+                    <div class="form-group full-width">
+                        <label for="notes">Notes</label>
+                        <textarea id="notes" rows="4" placeholder="Add your fishing notes here..."></textarea>
+                    </div>
+                    
+                    <div class="form-group full-width">
+                        <label for="fishingLocationMap">Fishing Location</label>
+                        <div id="fishingLocationMap"></div>
+                        <div class="map-instructions">Click on the map to drop a pin where you were fishing</div>
+                        <input type="hidden" id="fishingLat">
+                        <input type="hidden" id="fishingLon">
+                        <input type="hidden" id="fishingAddress">
+                    </div>
+                </div>
+                
+                <div class="actions">
+                    <button type="button" class="btn btn-danger" onclick="closeModal()">Cancel</button>
+                    <button type="submit" class="btn btn-success">Save Entry</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Flow Graph Modal -->
+    <div id="flowGraphModal" class="modal">
+        <div class="modal-content" style="max-width: 900px;">
+            <span class="close" onclick="closeFlowGraph()">&times;</span>
+            <h2 id="graphTitle">Flow Rate Graph</h2>
+            <div style="margin: 20px 0;">
+                <canvas id="flowChart" width="800" height="400"></canvas>
+            </div>
+            <div style="text-align: center; color: #666; font-size: 12px; margin-top: 10px;">
+                Data from USGS Water Services • Times in local timezone
+            </div>
+        </div>
+    </div>
+
+    <!-- Profile Modal -->
+    <div id="profileModal" class="modal">
+        <div class="modal-content" style="max-width: 650px;">
+            <span class="close" onclick="closeProfileModal()">&times;</span>
+            <h2 id="profileTitle">My Profile</h2>
+            <div class="status-message" id="profileStatusMessage"></div>
+            
+            <form id="profileForm">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="profileFirstName">First Name *</label>
+                        <input type="text" id="profileFirstName" required placeholder="Enter your first name">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="profileLastName">Last Name *</label>
+                        <input type="text" id="profileLastName" required placeholder="Enter your last name">
+                    </div>
+                    
+                    <div class="form-group full-width">
+                        <label for="profileAddress">Address</label>
+                        <textarea id="profileAddress" rows="3" placeholder="Enter your address"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="profilePhone">Phone Number</label>
+                        <input type="tel" id="profilePhone" placeholder="(555) 123-4567">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="profileEmail">Email Address</label>
+                        <input type="email" id="profileEmail" placeholder="your@email.com" readonly style="background-color: #2a2a2a; cursor: not-allowed;">
+                        <small style="color: #888; font-size: 12px; margin-top: 5px; display: block;">Email cannot be changed</small>
+                    </div>
+                    
+                    <div class="form-group full-width">
+                        <label for="profilePhoto">Profile Photo</label>
+                        <div class="photo-upload-container">
+                            <div class="photo-preview" id="photoPreview">
+                                <img id="profilePhotoImg" src="" alt="Profile Photo" style="display: none;">
+                                <div class="photo-placeholder" id="photoPlaceholder">
+                                    <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                        <circle cx="12" cy="7" r="4"></circle>
+                                    </svg>
+                                    <p>No photo selected</p>
+                                </div>
+                            </div>
+                            <input type="file" id="profilePhoto" accept="image/*" style="display: none;">
+                            <div class="photo-buttons">
+                                <button type="button" class="btn btn-primary" onclick="document.getElementById('profilePhoto').click();">Choose Photo</button>
+                                <button type="button" class="btn btn-danger" onclick="removeProfilePhoto();" id="removePhotoBtn" style="display: none;">Remove Photo</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Password Change Section -->
+                    <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid rgba(139, 69, 19, 0.3);">
+                        <h3 style="color: #8B4513; margin-bottom: 20px; font-size: 18px;">Change Password</h3>
+                        <div class="form-group">
+                            <label for="currentPassword">Current Password</label>
+                            <input type="password" id="currentPassword" placeholder="Enter current password">
+                        </div>
+                        <div class="form-group">
+                            <label for="newPassword">New Password</label>
+                            <input type="password" id="newPassword" placeholder="Enter new password">
+                        </div>
+                        <div class="form-group">
+                            <label for="confirmPassword">Confirm New Password</label>
+                            <input type="password" id="confirmPassword" placeholder="Confirm new password">
+                        </div>
+                        <button type="button" class="btn btn-primary" onclick="changePassword();">Change Password</button>
+                    </div>
+                    
+                    <!-- Delete Account Section -->
+                    <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid rgba(220, 20, 60, 0.3);">
+                        <h3 style="color: #DC143C; margin-bottom: 15px; font-size: 18px;">Delete Account</h3>
+                        <p style="color: #888; font-size: 14px; margin-bottom: 20px;">
+                            <strong>Warning:</strong> This action is permanent and cannot be undone. All your fishing entries, licenses, river data, and profile information will be permanently deleted.
+                        </p>
+                        <div class="form-group">
+                            <label for="deleteAccountPassword">Enter your password to confirm</label>
+                            <input type="password" id="deleteAccountPassword" placeholder="Enter your password">
+                        </div>
+                        <button type="button" class="btn" style="background-color: #DC143C; color: white; border-color: #DC143C;" onclick="deleteAccount();">Delete My Account</button>
+                    </div>
+                </div>
+                
+                <div class="actions">
+                    <button type="button" class="btn btn-danger" onclick="closeProfileModal()">Cancel</button>
+                    <button type="submit" class="btn btn-success">Save Profile</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- River Flow Modal -->
+    <div id="riverFlowModal" class="modal">
+        <div class="modal-content" style="max-width: 800px;">
+            <span class="close" onclick="closeRiverFlowModal()">&times;</span>
+            <h2 id="riverFlowTitle">River Flow Monitor</h2>
+            <div class="status-message" id="riverFlowStatusMessage"></div>
+            
+            <!-- Search Section -->
+            <div class="river-search-section">
+                <h3 style="color: #CD853F; margin-bottom: 15px; font-size: 1.2rem;">Add New River</h3>
+                <div class="form-grid" style="grid-template-columns: 2fr 1fr;">
+                    <div class="form-group">
+                        <label for="riverFlowSearch">Search for River/Stream</label>
+                        <input type="text" id="riverFlowSearch" placeholder="Search for river or stream..." oninput="searchRiversForFlow()">
+                        <div id="riverFlowSearchResults" style="display: none; max-height: 150px; overflow-y: auto; border: 1px solid rgba(139, 69, 19, 0.5); border-radius: 4px; margin-top: 5px; background: rgba(0, 0, 0, 0.8);"></div>
+                    </div>
+                    <div class="form-group">
+                        <label>&nbsp;</label>
+                        <button type="button" class="btn btn-success" onclick="addSelectedRiver();">Add River</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Saved Rivers Section -->
+            <div class="saved-rivers-section" style="margin-top: 30px;">
+                <h3 style="color: #CD853F; margin-bottom: 15px; font-size: 1.2rem;">Saved Rivers</h3>
+                <div class="rivers-container" id="savedRiversContainer">
+                    <div class="no-rivers-message" id="noRiversMessage">
+                        <p style="text-align: center; color: rgba(255, 255, 255, 0.6); font-style: italic; padding: 20px;">
+                            No rivers saved yet. Search and add rivers above to monitor their flow rates.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- License Library Modal -->
+    <div id="licenseLibraryModal" class="modal">
+        <div class="modal-content" style="max-width: 900px;">
+            <span class="close" onclick="closeLicenseLibraryModal()">&times;</span>
+            <h2>License Library</h2>
+            <div class="status-message" id="licenseStatusMessage"></div>
+            
+            <!-- Controls -->
+            <div class="license-controls" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <label for="stateFilter" style="margin: 0;">Filter by State:</label>
+                    <select id="stateFilter" onchange="filterLicensesByState()" style="min-width: 120px;">
+                        <option value="">All States</option>
+                    </select>
+                </div>
+                <button class="btn btn-success" onclick="showAddLicenseForm()">Add New License</button>
+            </div>
+            
+            <!-- Add License Form (Hidden by default) -->
+            <div id="addLicenseForm" style="display: none; background: rgba(139, 69, 19, 0.1); border: 1px solid rgba(139, 69, 19, 0.3); border-radius: 8px; padding: 20px; margin-bottom: 20px;">
+                <h3 style="color: #CD853F; margin-bottom: 15px;">Add New Fishing License</h3>
+                <form id="licenseForm">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="licenseState">State *</label>
+                            <select id="licenseState" required>
+                                <option value="">Select State</option>
+                                <option value="Alabama">Alabama</option>
+                                <option value="Alaska">Alaska</option>
+                                <option value="Arizona">Arizona</option>
+                                <option value="Arkansas">Arkansas</option>
+                                <option value="California">California</option>
+                                <option value="Colorado">Colorado</option>
+                                <option value="Connecticut">Connecticut</option>
+                                <option value="Delaware">Delaware</option>
+                                <option value="Florida">Florida</option>
+                                <option value="Georgia">Georgia</option>
+                                <option value="Hawaii">Hawaii</option>
+                                <option value="Idaho">Idaho</option>
+                                <option value="Illinois">Illinois</option>
+                                <option value="Indiana">Indiana</option>
+                                <option value="Iowa">Iowa</option>
+                                <option value="Kansas">Kansas</option>
+                                <option value="Kentucky">Kentucky</option>
+                                <option value="Louisiana">Louisiana</option>
+                                <option value="Maine">Maine</option>
+                                <option value="Maryland">Maryland</option>
+                                <option value="Massachusetts">Massachusetts</option>
+                                <option value="Michigan">Michigan</option>
+                                <option value="Minnesota">Minnesota</option>
+                                <option value="Mississippi">Mississippi</option>
+                                <option value="Missouri">Missouri</option>
+                                <option value="Montana">Montana</option>
+                                <option value="Nebraska">Nebraska</option>
+                                <option value="Nevada">Nevada</option>
+                                <option value="New Hampshire">New Hampshire</option>
+                                <option value="New Jersey">New Jersey</option>
+                                <option value="New Mexico">New Mexico</option>
+                                <option value="New York">New York</option>
+                                <option value="North Carolina">North Carolina</option>
+                                <option value="North Dakota">North Dakota</option>
+                                <option value="Ohio">Ohio</option>
+                                <option value="Oklahoma">Oklahoma</option>
+                                <option value="Oregon">Oregon</option>
+                                <option value="Pennsylvania">Pennsylvania</option>
+                                <option value="Rhode Island">Rhode Island</option>
+                                <option value="South Carolina">South Carolina</option>
+                                <option value="South Dakota">South Dakota</option>
+                                <option value="Tennessee">Tennessee</option>
+                                <option value="Texas">Texas</option>
+                                <option value="Utah">Utah</option>
+                                <option value="Vermont">Vermont</option>
+                                <option value="Virginia">Virginia</option>
+                                <option value="Washington">Washington</option>
+                                <option value="West Virginia">West Virginia</option>
+                                <option value="Wisconsin">Wisconsin</option>
+                                <option value="Wyoming">Wyoming</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="licenseType">License Type</label>
+                            <input type="text" id="licenseType" placeholder="e.g., Annual Fishing License, Trout Stamp">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="licenseStartDate">Start Date *</label>
+                            <input type="date" id="licenseStartDate" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="licenseEndDate">End Date *</label>
+                            <input type="date" id="licenseEndDate" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="enableNotifications" style="margin-right: 8px;">
+                                Enable expiration notifications
+                            </label>
+                        </div>
+                        
+                        <div class="form-group full-width">
+                            <label for="licenseDocument">License Document (Photo/PDF)</label>
+                            <div class="license-upload-container">
+                                <div class="license-preview" id="licensePreview">
+                                    <div class="license-placeholder" id="licensePlaceholder">
+                                        <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                            <polyline points="14,2 14,8 20,8"></polyline>
+                                        </svg>
+                                        <p>No document selected</p>
+                                    </div>
+                                    <img id="licenseDocumentImg" src="" alt="License Document" style="display: none; max-width: 100%; border-radius: 8px;">
+                                </div>
+                                <input type="file" id="licenseDocument" accept="image/*,.pdf" style="display: none;">
+                                <div class="license-upload-buttons">
+                                    <button type="button" class="btn btn-primary" onclick="document.getElementById('licenseDocument').click();">Choose File</button>
+                                    <button type="button" class="btn btn-danger" onclick="removeLicenseDocument();" id="removeLicenseBtn" style="display: none;">Remove</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="actions" style="margin-top: 20px;">
+                        <button type="button" class="btn btn-danger" onclick="cancelAddLicense()">Cancel</button>
+                        <button type="submit" class="btn btn-success">Save License</button>
+                    </div>
+                </form>
+            </div>
+            
+            <div id="licenseContainer">
+                <!-- Licenses will be displayed here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        var fishingData = [];
+        var currentEditIndex = -1;
+
+        function showAddModal() {
+            currentEditIndex = -1;
+            var modalTitle = document.getElementById('modalTitle');
+            var fishingForm = document.getElementById('fishingForm');
+            var entryModal = document.getElementById('entryModal');
+            
+            if (modalTitle) modalTitle.textContent = 'Add New Fishing Entry';
+            if (fishingForm) fishingForm.reset();
+            if (entryModal) entryModal.style.display = 'block';
+            
+            // Initialize map after modal is shown
+            setTimeout(function() {
+                initializeFishingLocationMap();
+            }, 100);
+        }
+
+        function editEntry(index) {
+            currentEditIndex = index;
+            var entry = fishingData[index];
+            
+            var modalTitle = document.getElementById('modalTitle');
+            var entryModal = document.getElementById('entryModal');
+            
+            if (modalTitle) modalTitle.textContent = 'Edit Fishing Entry';
+            
+            var entryDate = document.getElementById('entryDate');
+            var cityState = document.getElementById('cityState');
+            var selectedLat = document.getElementById('selectedLat');
+            var selectedLon = document.getElementById('selectedLon');
+            var startTime = document.getElementById('startTime');
+            var endTime = document.getElementById('endTime');
+            var waterTemp = document.getElementById('waterTemp');
+            var waterFlow = document.getElementById('waterFlow');
+            var targetSpecies = document.getElementById('targetSpecies');
+            var angler = document.getElementById('angler');
+            var fliesUsed = document.getElementById('fliesUsed');
+            var notes = document.getElementById('notes');
+            
+            if (entryDate) entryDate.value = entry.date || '';
+            if (cityState) cityState.value = entry.cityState || '';
+            if (selectedLat) selectedLat.value = entry.selectedLat || '';
+            if (selectedLon) selectedLon.value = entry.selectedLon || '';
+            if (startTime) startTime.value = entry.startTime || '';
+            if (endTime) endTime.value = entry.endTime || '';
+            if (waterTemp) waterTemp.value = entry.waterTemp || '';
+            if (waterFlow) waterFlow.value = entry.waterFlow || '';
+            if (targetSpecies) targetSpecies.value = entry.targetSpecies || '';
+            if (angler) angler.value = entry.angler || '';
+            if (fliesUsed) fliesUsed.value = entry.fliesUsed || '';
+            if (notes) notes.value = entry.notes || '';
+            
+            // Set river search fields
+            var riverSearch = document.getElementById('riverSearch');
+            var selectedSiteNumber = document.getElementById('selectedSiteNumber');
+            if (riverSearch) riverSearch.value = entry.riverName || '';
+            if (selectedSiteNumber) selectedSiteNumber.value = entry.siteNumber || '';
+            
+            // Set location fields
+            var fishingLat = document.getElementById('fishingLat');
+            var fishingLon = document.getElementById('fishingLon');
+            var fishingAddress = document.getElementById('fishingAddress');
+            if (fishingLat) fishingLat.value = entry.fishingLat || '';
+            if (fishingLon) fishingLon.value = entry.fishingLon || '';
+            if (fishingAddress) fishingAddress.value = entry.fishingAddress || '';
+            
+            if (entryModal) entryModal.style.display = 'block';
+            
+            // Initialize map and set existing location
+            setTimeout(function() {
+                initializeFishingLocationMap();
+                if (entry.fishingLat && entry.fishingLon) {
+                    var lat = parseFloat(entry.fishingLat);
+                    var lon = parseFloat(entry.fishingLon);
+                    fishingLocationMap.setView([lat, lon], 15);
+                    dropFishingPin(lat, lon);
+                    if (entry.fishingAddress) {
+                        currentMarker.setPopupContent('Fishing Location<br>' + entry.fishingAddress);
+                    }
+                }
+            }, 100);
+        }
+
+        async function deleteEntry(index) {
+            if (confirm('Are you sure you want to delete this entry?')) {
+                try {
+                    await deleteFishingEntry(index);
+                    await loadData(); // Reload data from database
+                    renderTable();
+                    updateFilterOptions();
+                    showStatusMessage('Entry deleted successfully!', 'success');
+                } catch (error) {
+                    showStatusMessage('Error deleting entry: ' + error.message, 'error');
+                    console.error('Delete error:', error);
+                }
+            }
+        }
+
+        function closeModal() {
+            var entryModal = document.getElementById('entryModal');
+            if (entryModal) entryModal.style.display = 'none';
+            hideStatusMessage();
+        }
+
+        function clearFilters() {
+            var filterDate = document.getElementById('filterDate');
+            var filterAngler = document.getElementById('filterAngler');
+            var filterSpecies = document.getElementById('filterSpecies');
+            var searchNotes = document.getElementById('searchNotes');
+            
+            if (filterDate) filterDate.value = '';
+            if (filterAngler) filterAngler.value = '';
+            if (filterSpecies) filterSpecies.value = '';
+            if (searchNotes) searchNotes.value = '';
+            
+            applyFilters();
+        }
+
+        function getMoonPhase(date) {
+            var phases = ['🌑', '🌒', '🌓', '🌔', '🌕', '🌖', '🌗', '🌘'];
+            var phaseNames = ['New Moon', 'Waxing Crescent', 'First Quarter', 'Waxing Gibbous', 'Full Moon', 'Waning Gibbous', 'Last Quarter', 'Waning Crescent'];
+            
+            var d = new Date(date);
+            var year = d.getFullYear();
+            var month = d.getMonth() + 1;
+            var day = d.getDate();
+            
+            // Use more accurate algorithm based on astronomical calculations
+            // Reference: Meeus "Astronomical Algorithms" and matching Moongiant accuracy
+            
+            // Calculate Julian Day Number (more precise method)
+            var a = Math.floor((14 - month) / 12);
+            var y = year - a;
+            var m = month + 12 * a - 3;
+            var jdn = day + Math.floor((153 * m + 2) / 5) + 365 * y + Math.floor(y / 4) - Math.floor(y / 100) + Math.floor(y / 400) + 1721119;
+            
+            // Convert to Julian Day (add 0.5 for noon)
+            var jd = jdn + 0.5;
+            
+            // More precise new moon reference matching astronomical data
+            // New Moon reference: January 6, 2000 18:14 UTC (JD 2451549.259722)
+            var newMoonJd = 2451549.259722;
+            var synodicMonth = 29.5305888531; // Precise synodic month length
+            
+            // Calculate days since reference new moon
+            var daysSinceNewMoon = jd - newMoonJd;
+            
+            // Find current lunation cycle
+            var lunationNumber = daysSinceNewMoon / synodicMonth;
+            var currentCycle = lunationNumber - Math.floor(lunationNumber);
+            
+            // Ensure positive
+            if (currentCycle < 0) currentCycle += 1;
+            
+            // Calculate moon age in days
+            var moonAge = currentCycle * synodicMonth;
+            
+            // More accurate phase determination matching Moongiant
+            var phase;
+            if (moonAge < 1.84566) phase = 0;        // New Moon (0-1.84 days)
+            else if (moonAge < 5.53699) phase = 1;   // Waxing Crescent (1.84-5.54 days)
+            else if (moonAge < 9.22831) phase = 2;   // First Quarter (5.54-9.23 days)
+            else if (moonAge < 12.91963) phase = 3;  // Waxing Gibbous (9.23-12.92 days)
+            else if (moonAge < 16.61096) phase = 4;  // Full Moon (12.92-16.61 days)
+            else if (moonAge < 20.30228) phase = 5;  // Waning Gibbous (16.61-20.30 days)
+            else if (moonAge < 23.99361) phase = 6;  // Last Quarter (20.30-24.0 days)
+            else if (moonAge < 27.68493) phase = 7;  // Waning Crescent (24.0-27.68 days)
+            else phase = 0;                          // New Moon (27.68+ days)
+            
+            // Calculate illumination percentage (more accurate formula)
+            var phaseAngle = 2 * Math.PI * currentCycle;
+            var illumination = Math.round(50 * (1 - Math.cos(phaseAngle)));
+            
+            // Ensure illumination is within 0-100%
+            illumination = Math.max(0, Math.min(100, illumination));
+            
+            return {
+                emoji: phases[phase],
+                name: phaseNames[phase],
+                illumination: illumination + '%',
+                age: Math.round(moonAge * 100) / 100 // Moon age in days (2 decimal places)
+            };
+        }
+        
+        function getTimezoneFromZipcode(zipcode) {
+            // Approximate timezone offset based on zipcode ranges (US-centric)
+            var zipNum = parseInt(zipcode) || 0;
+            
+            // Eastern Time (UTC-5)
+            if ((zipNum >= 0 && zipNum <= 19999) || (zipNum >= 20000 && zipNum <= 31999)) return -5;
+            // Central Time (UTC-6)  
+            else if ((zipNum >= 35000 && zipNum <= 41999) || (zipNum >= 50000 && zipNum <= 56999) || (zipNum >= 70000 && zipNum <= 71999) || (zipNum >= 73000 && zipNum <= 77999)) return -6;
+            // Mountain Time (UTC-7)
+            else if ((zipNum >= 59000 && zipNum <= 59999) || (zipNum >= 80000 && zipNum <= 84999) || (zipNum >= 86000 && zipNum <= 86999) || (zipNum >= 88000 && zipNum <= 89999)) return -7;
+            // Pacific Time (UTC-8)
+            else if ((zipNum >= 90000 && zipNum <= 99999) || (zipNum >= 85000 && zipNum <= 85999)) return -8;
+            // Alaska Time (UTC-9)
+            else if (zipNum >= 99500 && zipNum <= 99999) return -9;
+            // Hawaii Time (UTC-10)
+            else if (zipNum >= 96700 && zipNum <= 96899) return -10;
+            // Default to Central Time
+            else return -6;
+        }
+
+        // Replace 'YOUR_API_KEY' with your actual OpenWeatherMap API key
+        var OPENWEATHER_API_KEY = '03fddef136f27a712e6ef0d9ccafdbf1';
+        
+        // USGS Water Services API endpoints
+        var USGS_SITE_SERVICE = 'https://waterservices.usgs.gov/nwis/site/';
+        var USGS_INSTANTANEOUS_SERVICE = 'https://waterservices.usgs.gov/nwis/iv/';
+        
+        var riverSearchTimeout;
+        var entryRiverSearchTimeout;
+        var citySearchTimeout;
+        var selectedEntryRiver = null;
+        var fishingLocationMap;
+        var currentMarker;
+        var flowChart;
+        
+        function initializeFishingLocationMap() {
+            if (fishingLocationMap) {
+                fishingLocationMap.remove();
+            }
+            
+            // Default to Minnesota center (can be changed based on zipcode)
+            var defaultLat = 44.9537;
+            var defaultLon = -93.0900;
+            
+            // Initialize the map
+            fishingLocationMap = L.map('fishingLocationMap').setView([defaultLat, defaultLon], 10);
+            
+            // Add OpenStreetMap tile layer
+            L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+            }).addTo(fishingLocationMap);
+            
+            // Add click event to drop pin
+            fishingLocationMap.on('click', function(e) {
+                dropFishingPin(e.latlng.lat, e.latlng.lng);
+            });
+        }
+        
+        function dropFishingPin(lat, lon) {
+            // Remove existing marker if any
+            if (currentMarker) {
+                fishingLocationMap.removeLayer(currentMarker);
+            }
+            
+            // Add new marker
+            currentMarker = L.marker([lat, lon]).addTo(fishingLocationMap);
+            
+            // Save coordinates to hidden fields
+            document.getElementById('fishingLat').value = lat.toFixed(6);
+            document.getElementById('fishingLon').value = lon.toFixed(6);
+            
+            // Get address from coordinates (reverse geocoding)
+            reverseGeocode(lat, lon);
+            
+            // Add popup with coordinates
+            currentMarker.bindPopup('Fishing Location<br>Lat: ' + lat.toFixed(6) + '<br>Lon: ' + lon.toFixed(6)).openPopup();
+        }
+        
+        function reverseGeocode(lat, lon) {
+            // Use OpenStreetMap Nominatim for reverse geocoding (free)
+            var url = 'https://nominatim.openstreetmap.org/reverse?format=json&lat=' + lat + '&lon=' + lon + '&zoom=18&addressdetails=1';
+            
+            fetch(url)
+                .then(function(response) {
+                    return response.json();
+                })
+                .then(function(data) {
+                    if (data && data.display_name) {
+                        document.getElementById('fishingAddress').value = data.display_name;
+                        // Update popup with address
+                        if (currentMarker) {
+                            currentMarker.setPopupContent('Fishing Location<br>' + data.display_name);
+                        }
+                    }
+                })
+                .catch(function(error) {
+                    console.log('Reverse geocoding error:', error);
+                });
+        }
+        
+        function centerMapOnLocation(lat, lon) {
+            if (!fishingLocationMap) return;
+            fishingLocationMap.setView([lat, lon], 12);
+        }
+        
+        function searchCityState() {
+            var searchTerm = document.getElementById('cityState').value.trim();
+            var resultsDiv = document.getElementById('cityStateResults');
+            
+            if (searchTerm.length < 3) {
+                resultsDiv.style.display = 'none';
+                return;
+            }
+            
+            // Debounce search
+            clearTimeout(citySearchTimeout);
+            citySearchTimeout = setTimeout(function() {
+                performCityStateSearch(searchTerm);
+            }, 500);
+        }
+        
+        function performCityStateSearch(searchTerm) {
+            var resultsDiv = document.getElementById('cityStateResults');
+            resultsDiv.innerHTML = '<div style="padding: 10px; color: rgba(255, 255, 255, 0.7);">Searching...</div>';
+            resultsDiv.style.display = 'block';
+            
+            // Use OpenStreetMap Nominatim for city search
+            var url = 'https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=10&countrycodes=us&q=' + encodeURIComponent(searchTerm);
+            
+            fetch(url)
+                .then(function(response) {
+                    if (!response.ok) throw new Error('City search failed');
+                    return response.json();
+                })
+                .then(function(data) {
+                    if (data && data.length > 0) {
+                        displayCityStateResults(data);
+                    } else {
+                        resultsDiv.innerHTML = '<div style="padding: 10px; color: #666;">No cities found matching "' + searchTerm + '"</div>';
+                    }
+                })
+                .catch(function(error) {
+                    console.error('City search error:', error);
+                    resultsDiv.innerHTML = '<div style="padding: 10px; color: #e74c3c;">Error searching cities. Please try again.</div>';
+                });
+        }
+        
+        function displayCityStateResults(results) {
+            var resultsDiv = document.getElementById('cityStateResults');
+            
+            if (results.length === 0) {
+                resultsDiv.innerHTML = '<div style="padding: 10px; color: rgba(255, 255, 255, 0.6);">No cities found</div>';
+                return;
+            }
+            
+            var html = '';
+            results.forEach(function(result) {
+                var displayName = result.display_name;
+                var city = result.address ? (result.address.city || result.address.town || result.address.village) : '';
+                var state = result.address ? result.address.state : '';
+                var shortName = city && state ? city + ', ' + state : displayName.split(',').slice(0, 2).join(',');
+                
+                html += '<div style="padding: 8px; border-bottom: 1px solid rgba(139, 69, 19, 0.2); cursor: pointer;" ' +
+                    'onmouseover="this.style.backgroundColor=\'rgba(139, 69, 19, 0.1)\'" ' +
+                    'onmouseout="this.style.backgroundColor=\'transparent\'" ' +
+                    'onclick="selectCityState(\'' + result.lat + '\', \'' + result.lon + '\', \'' + shortName.replace(/'/g, "\\'") + '\')">' +
+                    '<div style="font-weight: bold; color: #CD853F;">' + shortName + '</div>' +
+                    '<div style="font-size: 12px; color: rgba(255, 255, 255, 0.7);">(' + (result.display_name.split(',').slice(-1)[0].trim() || 'Location') + ')</div>' +
+                    '</div>';
+            });
+            
+            resultsDiv.innerHTML = html;
+        }
+        
+        function selectCityState(lat, lon, cityStateName) {
+            document.getElementById('cityState').value = cityStateName;
+            document.getElementById('selectedLat').value = lat;
+            document.getElementById('selectedLon').value = lon;
+            document.getElementById('cityStateResults').style.display = 'none';
+            
+            // Center map on selected location
+            centerMapOnLocation(parseFloat(lat), parseFloat(lon));
+        }
+        
+        function searchRiversForEntry() {
+            var searchTerm = document.getElementById('riverSearch').value.trim();
+            var resultsDiv = document.getElementById('riverResults');
+            
+            if (searchTerm.length < 3) {
+                resultsDiv.style.display = 'none';
+                selectedEntryRiver = null;
+                return;
+            }
+            
+            clearTimeout(entryRiverSearchTimeout);
+            entryRiverSearchTimeout = setTimeout(function() {
+                performEntryRiverSearch(searchTerm);
+            }, 500);
+        }
+        
+        function performEntryRiverSearch(searchTerm) {
+            var resultsDiv = document.getElementById('riverResults');
+            resultsDiv.innerHTML = '<div style="padding: 10px; color: rgba(255, 255, 255, 0.7);">Searching...</div>';
+            resultsDiv.style.display = 'block';
+            
+            // Create a hardcoded list of popular rivers with their USGS site numbers for now
+            // This provides immediate functionality while the API search is being debugged
+            var popularRivers = [
+                {site_no: '05331000', site_name: 'Mississippi River at St. Paul, MN', state: 'MN'},
+                {site_no: '05330000', site_name: 'Minnesota River at Jordan, MN', state: 'MN'},
+                {site_no: '05340500', site_name: 'St. Croix River at Stillwater, MN', state: 'MN'},
+                {site_no: '05288500', site_name: 'Mississippi River at Fridley, MN', state: 'MN'},
+                {site_no: '05366800', site_name: 'Chippewa River at Grand Ave at Eau Claire, WI', state: 'WI'},
+                {site_no: '05365500', site_name: 'Chippewa River at Chippewa Falls, WI', state: 'WI'},
+                {site_no: '05370000', site_name: 'Eau Galle River at Spring Valley, WI', state: 'WI'},
+                {site_no: '05345000', site_name: 'Vermillion River Near Empire, MN', state: 'MN'},
+                {site_no: '05342000', site_name: 'Kinnickinnic River Near River Falls, WI', state: 'WI'},
+                {site_no: '05362000', site_name: 'Jump River at Sheldon, WI', state: 'WI'},
+                {site_no: '05359500', site_name: 'South Fork Flambeau River Near Phillips, WI', state: 'WI'},
+                {site_no: '05356000', site_name: 'Chippewa River Near Bruce, WI', state: 'WI'},
+                {site_no: '05394500', site_name: 'Prairie River Near Merrill, WI', state: 'WI'},
+                {site_no: '05395000', site_name: 'Wisconsin River at Merrill, WI', state: 'WI'},
+                {site_no: '05393700', site_name: 'Spirit River at Spirit Falls, WI', state: 'WI'},
+                {site_no: '09380000', site_name: 'Colorado River at Lees Ferry, AZ', state: 'AZ'},
+                {site_no: '06191500', site_name: 'Yellowstone River at Corwin Springs, MT', state: 'MT'},
+                {site_no: '12358500', site_name: 'Clark Fork at Deer Lodge, MT', state: 'MT'},
+                {site_no: '13337000', site_name: 'Snake River at Anatone, WA', state: 'WA'},
+                {site_no: '14211720', site_name: 'Sandy River below Bull Run River, OR', state: 'OR'},
+                {site_no: '01463500', site_name: 'Delaware River at Trenton, NJ', state: 'NJ'},
+                {site_no: '03086000', site_name: 'Beaver River at Beaver Falls, PA', state: 'PA'},
+                {site_no: '01632000', site_name: 'South Fork Shenandoah River at Front Royal, VA', state: 'VA'},
+                {site_no: '02102908', site_name: 'Haw River at Bynum, NC', state: 'NC'},
+                {site_no: '02334430', site_name: 'Chattahoochee River at Buford Dam, GA', state: 'GA'},
+                {site_no: '08158000', site_name: 'Colorado River at Austin, TX', state: 'TX'}
+            ];
+            
+            // Filter rivers based on search term
+            var matchingRivers = popularRivers.filter(function(river) {
+                return river.site_name.toLowerCase().includes(searchTerm.toLowerCase());
+            }).slice(0, 10);
+            
+            if (matchingRivers.length > 0) {
+                displayEntrySearchResults(matchingRivers);
+            } else {
+                resultsDiv.innerHTML = '<div style="padding: 10px; color: rgba(255, 255, 255, 0.6);">No rivers found matching "' + searchTerm + '"</div>';
+            }
+        }
+        
+        function performUSGSSearchFallback(searchTerm) {
+            var resultsDiv = document.getElementById('riverResults');
+            resultsDiv.innerHTML = '<div style="padding: 10px;">Searching alternative method...</div>';
+            
+            // Try searching by state code for popular rivers
+            var stateCode = 'MN'; // Default to Minnesota, can be expanded
+            var params = new URLSearchParams({
+                format: 'json',
+                stateCd: stateCode,
+                siteType: 'ST',
+                hasDataTypeCd: '00060',
+                siteStatus: 'active'
+            });
+            
+            fetch(USGS_SITE_SERVICE + '?' + params.toString())
+                .then(function(response) {
+                    if (!response.ok) throw new Error('USGS fallback search failed');
+                    return response.json();
+                })
+                .then(function(data) {
+                    if (data.value && data.value.timeSeries) {
+                        // Filter by search term in site name
+                        var sites = data.value.timeSeries
+                            .filter(function(site) {
+                                var siteName = site.sourceInfo.siteName.toLowerCase();
+                                return siteName.includes(searchTerm.toLowerCase());
+                            })
+                            .slice(0, 10);
+                        
+                        if (sites.length > 0) {
+                            displayRiverResults(sites);
+                        } else {
+                            resultsDiv.innerHTML = '<div style="padding: 10px; color: #666;">No rivers found in Minnesota matching "' + searchTerm + '". Try searching for: Mississippi, Minnesota, St Croix</div>';
+                        }
+                    } else {
+                        resultsDiv.innerHTML = '<div style="padding: 10px; color: #e74c3c;">No data available. Try common river names like: Mississippi River, Minnesota River, St Croix River</div>';
+                    }
+                })
+                .catch(function(error) {
+                    console.error('USGS fallback search error:', error);
+                    resultsDiv.innerHTML = '<div style="padding: 10px; color: #e74c3c;">Search temporarily unavailable. Try: Mississippi River, Minnesota River, St Croix River</div>';
+                });
+        }
+        
+        function displayEntrySearchResults(rivers) {
+            var resultsDiv = document.getElementById('riverResults');
+            
+            var html = '';
+            rivers.forEach(function(river) {
+                html += '<div style="padding: 8px; border-bottom: 1px solid rgba(139, 69, 19, 0.2); cursor: pointer;" ' +
+                    'onmouseover="this.style.backgroundColor=\'rgba(139, 69, 19, 0.1)\'" ' +
+                    'onmouseout="this.style.backgroundColor=\'transparent\'" ' +
+                    'onclick="selectRiverForEntry(\'' + river.site_no + '\', \'' + river.site_name.replace(/'/g, "\\'") + '\')">' +
+                    '<div style="font-weight: bold; color: #CD853F;">' + river.site_no + ' - ' + river.site_name + '</div>' +
+                    '<div style="font-size: 12px; color: rgba(255, 255, 255, 0.7);">(' + river.state + ')</div>' +
+                    '</div>';
+            });
+            
+            resultsDiv.innerHTML = html;
+        }
+        
+        function selectRiverForEntry(siteNumber, siteName) {
+            selectedEntryRiver = {
+                siteNumber: siteNumber,
+                siteName: siteName
+            };
+            
+            document.getElementById('riverSearch').value = siteName;
+            document.getElementById('selectedSiteNumber').value = siteNumber;
+            document.getElementById('riverResults').style.display = 'none';
+            
+            // Get current flow data
+            getCurrentFlowData(siteNumber);
+        }
+        
+        function getCurrentFlowData(siteNumber) {
+            var flowInput = document.getElementById('waterFlow');
+            var selectedDate = document.getElementById('entryDate').value;
+            
+            if (!selectedDate) {
+                flowInput.value = 'Please select a date first';
+                return;
+            }
+            
+            flowInput.value = 'Loading flow data...';
+            
+            // Get flow data for the specific date selected
+            console.log('Fetching flow data for site:', siteNumber, 'date:', selectedDate);
+            getFlowDataForDate(siteNumber, selectedDate)
+                .then(function(flowData) {
+                    console.log('Flow data received:', flowData);
+                    if (flowData && flowData.flowRate !== null) {
+                        flowInput.value = Math.round(flowData.flowRate) + ' CFS';
+                    } else {
+                        flowInput.value = 'No data for ' + selectedDate;
+                    }
+                })
+                .catch(function(error) {
+                    console.error('Flow data error:', error);
+                    // Check if it's a CORS error and provide fallback
+                    if (error.message && (error.message.includes('CORS') || error.message.includes('fetch') || error.message.includes('NetworkError'))) {
+                        console.log('CORS/Network error detected, using simulated flow data');
+                        var simulatedFlow = getSimulatedFlowData(siteNumber);
+                        flowInput.value = simulatedFlow + ' CFS (simulated - run from web server for real data)';
+                    } else {
+                        flowInput.value = 'Error: ' + (error.message || 'Unknown error');
+                    }
+                });
+        }
+        
+        function getSimulatedFlowData(siteNumber) {
+            // Generate realistic flow data based on site number
+            var baseFlow = 500; // Base flow in CFS
+            var siteVariation = (parseInt(siteNumber) % 1000) / 10; // Site-specific variation
+            var seasonalVariation = Math.sin(new Date().getMonth() * Math.PI / 6) * 200; // Seasonal variation
+            var randomVariation = (Math.random() - 0.5) * 100; // Random daily variation
+            
+            return Math.round(Math.max(50, baseFlow + siteVariation + seasonalVariation + randomVariation));
+        }
+        
+        function getFlowDataForDate(siteNumber, date) {
+            return new Promise(function(resolve, reject) {
+                var selectedDate = new Date(date);
+                var today = new Date();
+                
+                // Check if date is today or recent (use instantaneous data)
+                var daysDiff = Math.floor((today - selectedDate) / (1000 * 60 * 60 * 24));
+                
+                if (daysDiff <= 3) {
+                    // Use instantaneous data for recent dates
+                    getInstantaneousFlowData(siteNumber, date).then(resolve).catch(reject);
+                } else {
+                    // Use daily values for historical dates
+                    getHistoricalFlowData(siteNumber, date).then(resolve).catch(reject);
+                }
+            });
+        }
+        
+        function getInstantaneousFlowData(siteNumber, date) {
+            return new Promise(function(resolve, reject) {
+                var params = new URLSearchParams({
+                    format: 'json',
+                    sites: siteNumber,
+                    parameterCd: '00060', // Stream flow in CFS
+                    startDT: date,
+                    endDT: date
+                });
+                
+                fetch(USGS_INSTANTANEOUS_SERVICE + '?' + params.toString())
+                    .then(function(response) {
+                        if (!response.ok) throw new Error('USGS API request failed: ' + response.status + ' ' + response.statusText);
+                        return response.json();
+                    })
+                    .then(function(data) {
+                        if (data.value && data.value.timeSeries && data.value.timeSeries.length > 0) {
+                            var timeSeries = data.value.timeSeries[0];
+                            var values = timeSeries.values[0].value;
+                            
+                            if (values && values.length > 0) {
+                                // Get average flow for the day
+                                var totalFlow = 0;
+                                var validReadings = 0;
+                                
+                                values.forEach(function(reading) {
+                                    var flow = parseFloat(reading.value);
+                                    if (!isNaN(flow)) {
+                                        totalFlow += flow;
+                                        validReadings++;
+                                    }
+                                });
+                                
+                                if (validReadings > 0) {
+                                    resolve({ flowRate: totalFlow / validReadings });
+                                } else {
+                                    resolve({ flowRate: null });
+                                }
+                            } else {
+                                resolve({ flowRate: null });
+                            }
+                        } else {
+                            resolve({ flowRate: null });
+                        }
+                    })
+                    .catch(function(error) {
+                        console.error('Instantaneous flow data fetch error:', error);
+                        if (error.name === 'TypeError' && error.message.includes('fetch')) {
+                            reject(new Error('CORS: Cannot access USGS API from local file. Please run from a web server.'));
+                        } else {
+                            reject(new Error('Failed to fetch instantaneous flow data: ' + error.message));
+                        }
+                    });
+            });
+        }
+        
+        function getHistoricalFlowData(siteNumber, date) {
+            return new Promise(function(resolve, reject) {
+                // Use USGS Daily Values Service for historical data
+                var dailyValuesService = 'https://waterservices.usgs.gov/nwis/dv/';
+                
+                var params = new URLSearchParams({
+                    format: 'json',
+                    sites: siteNumber,
+                    parameterCd: '00060', // Stream flow in CFS
+                    startDT: date,
+                    endDT: date,
+                    statCd: '00003' // Mean daily flow
+                });
+                
+                fetch(dailyValuesService + '?' + params.toString())
+                    .then(function(response) {
+                        if (!response.ok) throw new Error('USGS Daily Values API request failed: ' + response.status + ' ' + response.statusText);
+                        return response.json();
+                    })
+                    .then(function(data) {
+                        if (data.value && data.value.timeSeries && data.value.timeSeries.length > 0) {
+                            var timeSeries = data.value.timeSeries[0];
+                            var values = timeSeries.values[0].value;
+                            
+                            if (values && values.length > 0) {
+                                var flowValue = parseFloat(values[0].value);
+                                if (!isNaN(flowValue)) {
+                                    resolve({ flowRate: flowValue });
+                                } else {
+                                    resolve({ flowRate: null });
+                                }
+                            } else {
+                                resolve({ flowRate: null });
+                            }
+                        } else {
+                            resolve({ flowRate: null });
+                        }
+                    })
+                    .catch(function(error) {
+                        console.error('Historical flow data fetch error:', error);
+                        if (error.name === 'TypeError' && error.message.includes('fetch')) {
+                            reject(new Error('CORS: Cannot access USGS API from local file. Please run from a web server.'));
+                        } else {
+                            reject(new Error('Failed to fetch historical flow data: ' + error.message));
+                        }
+                    });
+            });
+        }
+        
+        function showFlowGraph() {
+            var selectedSiteNumber = document.getElementById('selectedSiteNumber').value;
+            var selectedDate = document.getElementById('entryDate').value;
+            var riverName = document.getElementById('riverSearch').value;
+            
+            if (!selectedSiteNumber || !selectedDate) {
+                alert('Please select both a river and a date first.');
+                return;
+            }
+            
+            var modal = document.getElementById('flowGraphModal');
+            var title = document.getElementById('graphTitle');
+            title.textContent = 'Flow Rate Graph - ' + riverName + ' (' + selectedDate + ')';
+            modal.style.display = 'block';
+            
+            // Fetch and display hourly data
+            getHourlyFlowData(selectedSiteNumber, selectedDate)
+                .then(function(hourlyData) {
+                    displayFlowChart(hourlyData, riverName, selectedDate);
+                })
+                .catch(function(error) {
+                    console.error('Error fetching hourly flow data:', error);
+                    alert('Error loading flow data. Please try again.');
+                    closeFlowGraph();
+                });
+        }
+        
+        function showTableFlowGraph(entryIndex) {
+            var entry = fishingData[entryIndex];
+            
+            if (!entry.siteNumber || !entry.date) {
+                alert('Missing river or date information for this entry.');
+                return;
+            }
+            
+            var modal = document.getElementById('flowGraphModal');
+            var title = document.getElementById('graphTitle');
+            title.textContent = 'Flow Rate Graph - ' + (entry.riverName || 'Unknown River') + ' (' + entry.date + ')';
+            modal.style.display = 'block';
+            
+            // Fetch and display hourly data using entry data
+            getHourlyFlowData(entry.siteNumber, entry.date)
+                .then(function(hourlyData) {
+                    displayFlowChart(hourlyData, entry.riverName || 'Unknown River', entry.date);
+                })
+                .catch(function(error) {
+                    console.error('Error fetching hourly flow data:', error);
+                    alert('Error loading flow data. Please try again.');
+                    closeFlowGraph();
+                });
+        }
+        
+        function closeFlowGraph() {
+            var modal = document.getElementById('flowGraphModal');
+            modal.style.display = 'none';
+            
+            // Destroy existing chart
+            if (flowChart) {
+                flowChart.destroy();
+                flowChart = null;
+            }
+        }
+        
+        function getHourlyFlowData(siteNumber, date) {
+            return new Promise(function(resolve, reject) {
+                var selectedDate = new Date(date);
+                var today = new Date();
+                var daysDiff = Math.floor((today - selectedDate) / (1000 * 60 * 60 * 24));
+                
+                // For recent dates (≤7 days), fetch instantaneous data with hourly intervals
+                if (daysDiff <= 7) {
+                    var params = new URLSearchParams({
+                        format: 'json',
+                        sites: siteNumber,
+                        parameterCd: '00060',
+                        startDT: date + 'T00:00',
+                        endDT: date + 'T23:59'
+                    });
+                    
+                    fetch(USGS_INSTANTANEOUS_SERVICE + '?' + params.toString())
+                        .then(function(response) {
+                            if (!response.ok) throw new Error('Hourly flow request failed');
+                            return response.json();
+                        })
+                        .then(function(data) {
+                            if (data.value && data.value.timeSeries && data.value.timeSeries.length > 0) {
+                                var timeSeries = data.value.timeSeries[0];
+                                var values = timeSeries.values[0].value;
+                                
+                                if (values && values.length > 0) {
+                                    // Process data to hourly intervals
+                                    var hourlyData = processToHourlyData(values, date);
+                                    resolve(hourlyData);
+                                } else {
+                                    resolve([]);
+                                }
+                            } else {
+                                resolve([]);
+                            }
+                        })
+                        .catch(function(error) {
+                            reject(error);
+                        });
+                } else {
+                    // For historical dates, use daily values (single point)
+                    getHistoricalFlowData(siteNumber, date)
+                        .then(function(flowData) {
+                            if (flowData && flowData.flowRate !== null) {
+                                // Create mock hourly data from daily average
+                                var hourlyData = [];
+                                for (var hour = 0; hour < 24; hour++) {
+                                    hourlyData.push({
+                                        time: hour.toString().padStart(2, '0') + ':00',
+                                        flow: flowData.flowRate
+                                    });
+                                }
+                                resolve(hourlyData);
+                            } else {
+                                resolve([]);
+                            }
+                        })
+                        .catch(reject);
+                }
+            });
+        }
+        
+        function processToHourlyData(values, date) {
+            var hourlyData = [];
+            var hourlyAverages = {};
+            
+            // Group values by hour
+            values.forEach(function(reading) {
+                var dateTime = new Date(reading.dateTime);
+                var hour = dateTime.getHours();
+                var flow = parseFloat(reading.value);
+                
+                if (!isNaN(flow)) {
+                    if (!hourlyAverages[hour]) {
+                        hourlyAverages[hour] = { total: 0, count: 0 };
+                    }
+                    hourlyAverages[hour].total += flow;
+                    hourlyAverages[hour].count++;
+                }
+            });
+            
+            // Create hourly averages
+            for (var hour = 0; hour < 24; hour++) {
+                var timeStr = hour.toString().padStart(2, '0') + ':00';
+                if (hourlyAverages[hour]) {
+                    hourlyData.push({
+                        time: timeStr,
+                        flow: Math.round(hourlyAverages[hour].total / hourlyAverages[hour].count * 100) / 100
+                    });
+                } else {
+                    // No data for this hour
+                    hourlyData.push({
+                        time: timeStr,
+                        flow: null
+                    });
+                }
+            }
+            
+            return hourlyData;
+        }
+        
+        function displayFlowChart(hourlyData, riverName, date) {
+            var ctx = document.getElementById('flowChart').getContext('2d');
+            
+            // Destroy existing chart
+            if (flowChart) {
+                flowChart.destroy();
+            }
+            
+            var labels = hourlyData.map(function(d) { return d.time; });
+            var data = hourlyData.map(function(d) { return d.flow; });
+            
+            flowChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Flow Rate (CFS)',
+                        data: data,
+                        borderColor: '#3498db',
+                        backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 4,
+                        pointHoverRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Time (24-hour format)'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Flow Rate (CFS)'
+                            },
+                            beginAtZero: true
+                        }
+                    },
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: riverName + ' - ' + date
+                        },
+                        legend: {
+                            display: true
+                        }
+                    },
+                    elements: {
+                        point: {
+                            backgroundColor: '#3498db'
+                        }
+                    }
+                }
+            });
+        }
+        
+        function getWeatherData(lat, lon, date, cityState) {
+            return new Promise(function(resolve, reject) {
+                // Check if API key is configured
+                if (OPENWEATHER_API_KEY === 'YOUR_API_KEY_HERE') {
+                    // Fallback to simulated data if no API key
+                    return getSimulatedWeatherData(lat, lon, date, cityState).then(resolve).catch(reject);
+                }
+                
+                var dateObj = new Date(date);
+                var timestamp = Math.floor(dateObj.getTime() / 1000);
+                
+                // OpenWeatherMap API using coordinates instead of zipcode
+                var url = 'https://api.openweathermap.org/data/2.5/weather?lat=' + lat + '&lon=' + lon + '&appid=' + OPENWEATHER_API_KEY + '&units=imperial';
+                
+                // Add timeout to the fetch request
+                var controller = new AbortController();
+                var timeoutId = setTimeout(() => {
+                    controller.abort();
+                    console.log('Weather API request timed out, using simulated data');
+                }, 8000); // 8 second timeout
+                
+                fetch(url, { signal: controller.signal })
+                    .then(function(response) {
+                        clearTimeout(timeoutId);
+                        console.log('Weather API response received');
+                        if (!response.ok) {
+                            throw new Error('Weather API request failed: ' + response.status);
+                        }
+                        return response.json();
+                    })
+                    .then(function(data) {
+                        console.log('Weather data parsed successfully');
+                        // Convert pressure from hPa to inHg (1 hPa = 0.02953 inHg)
+                        var pressureInHg = data.main.pressure * 0.02953;
+                        
+                        resolve({
+                            airTemp: Math.round(data.main.temp),
+                            barometricPressure: Math.round(pressureInHg * 100) / 100, // 2 decimal places
+                            windDirection: getWindDirection(data.wind.deg),
+                            windSpeed: Math.round(data.wind.speed),
+                            location: data.name + ', ' + data.sys.country
+                        });
+                    })
+                    .catch(function(error) {
+                        clearTimeout(timeoutId);
+                        console.error('Weather API error:', error);
+                        console.log('Falling back to simulated weather data');
+                        // Fallback to simulated data on error
+                        getSimulatedWeatherData(lat, lon, date, cityState).then(resolve).catch(reject);
+                    });
+            });
+        }
+        
+        function getSimulatedWeatherData(lat, lon, date, cityState) {
+            return new Promise(function(resolve) {
+                setTimeout(function() {
+                    var latitude = parseFloat(lat) || 44.0;
+                    var dateObj = new Date(date);
+                    var month = dateObj.getMonth() + 1;
+                    var day = dateObj.getDate();
+                    
+                    // Temperature calculation based on latitude
+                    var baseTemp;
+                    if (latitude >= 45) baseTemp = 50; // Northern areas
+                    else if (latitude >= 40) baseTemp = 60; // Mid-northern areas  
+                    else if (latitude >= 35) baseTemp = 70; // Mid areas
+                    else if (latitude >= 30) baseTemp = 75; // Southern areas
+                    else baseTemp = 80; // Deep south/tropical
+                    
+                    var seasonalAdjustment = Math.sin((month - 4) * Math.PI / 6) * 30;
+                    var dailyVariation = Math.sin(day * Math.PI / 15) * 5;
+                    var airTemp = Math.round(baseTemp + seasonalAdjustment + dailyVariation);
+                    
+                    // Generate realistic barometric pressure (28.5 - 31.0 inHg range)
+                    var basePressure = 29.92; // Standard atmospheric pressure
+                    var pressureVariation = (Math.random() - 0.5) * 2; // -1 to +1
+                    var barometricPressure = Math.round((basePressure + pressureVariation) * 100) / 100;
+                    
+                    resolve({
+                        airTemp: Math.max(10, Math.min(105, airTemp)),
+                        barometricPressure: Math.max(28.5, Math.min(31.0, barometricPressure)),
+                        windDirection: ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'][Math.floor(Math.random() * 8)],
+                        windSpeed: Math.round(Math.random() * 15 + 5)
+                    });
+                }, 500);
+            });
+        }
+        
+        function getWindDirection(degrees) {
+            var directions = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
+            var index = Math.round(degrees / 22.5) % 16;
+            return directions[index];
+        }
+
+        function saveEntry() {
+            var form = document.getElementById('fishingForm');
+            if (!form || !form.checkValidity()) {
+                showStatusMessage('Please fill in all required fields.', 'error');
+                return;
+            }
+
+            showStatusMessage('Fetching weather data...', 'success');
+            
+            var cityState = document.getElementById('cityState').value;
+            var lat = document.getElementById('selectedLat').value;
+            var lon = document.getElementById('selectedLon').value;
+            var date = document.getElementById('entryDate').value;
+            
+            // Use coordinates if available, otherwise fallback
+            if (lat && lon) {
+                getWeatherData(lat, lon, date, cityState).then(function(weatherData) {
+                    showStatusMessage('Weather data received, saving entry...', 'success');
+                    var moonPhase = getMoonPhase(date);
+                    var moonPhaseString = moonPhase.emoji + ' ' + moonPhase.name + ' (' + moonPhase.illumination + ')';
+                    saveEntryWithData(weatherData, moonPhaseString, cityState, date);
+                }).catch(function(error) {
+                    showStatusMessage('Weather API failed, using simulated data...', 'error');
+                    console.error('Weather API error:', error);
+                    // Continue with simulated data
+                    var moonPhase = getMoonPhase(date);
+                    var moonPhaseString = moonPhase.emoji + ' ' + moonPhase.name + ' (' + moonPhase.illumination + ')';
+                    getSimulatedWeatherData(lat, lon, date, cityState).then(function(simulatedWeather) {
+                        saveEntryWithData(simulatedWeather, moonPhaseString, cityState, date);
+                    });
+                });
+            } else {
+                showStatusMessage('Please select a city from the dropdown first.', 'error');
+                return;
+            }
+        }
+        
+        async function saveEntryWithData(weatherData, moonPhase, cityState, date) {
+            console.log('Starting saveEntryWithData with weather data:', weatherData);
+            
+            var entry = {
+                date: date,
+                cityState: cityState,
+                latitude: document.getElementById('fishingLat').value || document.getElementById('selectedLat').value,
+                longitude: document.getElementById('fishingLon').value || document.getElementById('selectedLon').value,
+                startTime: document.getElementById('startTime').value,
+                endTime: document.getElementById('endTime').value,
+                weatherTemp: weatherData.airTemp,
+                barometricPressure: weatherData.barometricPressure,
+                windSpeed: weatherData.windSpeed,
+                windDirection: weatherData.windDirection,
+                moonPhase: moonPhase,
+                riverName: document.getElementById('riverSearch').value,
+                siteNumber: document.getElementById('selectedSiteNumber').value,
+                waterFlow: document.getElementById('waterFlow').value,
+                notes: document.getElementById('notes').value,
+                species: document.getElementById('targetSpecies').value,
+                angler: document.getElementById('angler').value,
+                fliesUsed: document.getElementById('fliesUsed').value,
+                photoData: null  // No photo field in current form
+            };
+
+            console.log('Entry data prepared:', entry);
+
+            try {
+                if (currentEditIndex >= 0) {
+                    // For now, we'll treat updates as new entries since we need to implement update API
+                    showStatusMessage('Updating existing entries not yet supported. Creating new entry.', 'error');
+                }
+                
+                console.log('Calling saveFishingEntry...');
+                await saveFishingEntry(entry);
+                console.log('saveFishingEntry completed, loading data...');
+                
+                await loadData(); // Reload data from database
+                console.log('Data loaded, rendering table...');
+                
+                renderTable();
+                updateFilterOptions();
+                closeModal();
+                showStatusMessage('Entry saved successfully!', 'success');
+                console.log('Entry save process completed successfully');
+            } catch (error) {
+                showStatusMessage('Error saving entry: ' + error.message, 'error');
+                console.error('Save error:', error);
+            }
+        }
+
+        function showStatusMessage(message, type) {
+            var statusDiv = document.getElementById('statusMessage');
+            if (statusDiv) {
+                statusDiv.textContent = message;
+                statusDiv.className = 'status-message status-' + type;
+                statusDiv.style.display = 'block';
+            }
+        }
+
+        function hideStatusMessage() {
+            var statusDiv = document.getElementById('statusMessage');
+            if (statusDiv) statusDiv.style.display = 'none';
+        }
+
+        function renderTable() {
+            var tbody = document.getElementById('fishingTableBody');
+            if (!tbody) return;
+            
+            tbody.innerHTML = '';
+
+            for (var i = 0; i < fishingData.length; i++) {
+                var entry = fishingData[i];
+                var row = document.createElement('tr');
+                
+                var timeOnWater = entry.startTime && entry.endTime ? entry.startTime + ' - ' + entry.endTime : 'Not specified';
+                // Format wind data
+                var windInfo = 'N/A';
+                if (entry.windSpeed && entry.windDirection) {
+                    windInfo = entry.windDirection + ' ' + entry.windSpeed + ' mph';
+                } else if (entry.windSpeed) {
+                    windInfo = entry.windSpeed + ' mph';
+                } else if (entry.windDirection) {
+                    windInfo = entry.windDirection;
+                }
+                // Handle moon phase - it could be an object or string
+                var moonTitle = 'Unknown';
+                var moonEmoji = '🌙';
+                
+                // Debug: log the moonPhase data
+                console.log('Moon phase data for entry', entry.id, ':', entry.moonPhase, 'Type:', typeof entry.moonPhase);
+                
+                if (entry.moonPhase) {
+                    if (typeof entry.moonPhase === 'object' && entry.moonPhase !== null) {
+                        // If it's an object with emoji property
+                        moonEmoji = entry.moonPhase.emoji || '🌙';
+                        moonTitle = (entry.moonPhase.name || 'Unknown') + ' (' + (entry.moonPhase.illumination || '0%') + ')';
+                    } else if (typeof entry.moonPhase === 'string') {
+                        // Try to parse if it's a JSON string
+                        try {
+                            var parsedPhase = JSON.parse(entry.moonPhase);
+                            if (parsedPhase.emoji) {
+                                moonEmoji = parsedPhase.emoji;
+                                moonTitle = (parsedPhase.name || 'Unknown') + ' (' + (parsedPhase.illumination || '0%') + ')';
+                            } else {
+                                // If it's a regular string, extract first part as emoji
+                                moonEmoji = entry.moonPhase.split(' ')[0];
+                                moonTitle = entry.moonPhase;
+                            }
+                        } catch (e) {
+                            // If parsing fails, treat as regular string
+                            moonEmoji = entry.moonPhase.split(' ')[0];
+                            moonTitle = entry.moonPhase;
+                        }
+                    }
+                } else {
+                    console.log('No moon phase data for entry:', entry.id);
+                }
+
+                // Format location display - show city/state primarily
+                var locationDisplay = 'Not set';
+                if (entry.cityState) {
+                    locationDisplay = entry.cityState;
+                } else if (entry.fishingAddress) {
+                    // Shorten address for table display
+                    var shortAddress = entry.fishingAddress.split(',')[0];
+                    locationDisplay = '<span title="' + entry.fishingAddress + '">' + shortAddress + '</span>';
+                } else if (entry.latitude && entry.longitude) {
+                    locationDisplay = entry.latitude + ', ' + entry.longitude;
+                }
+
+                // Format CFS display with graph icon
+                var cfsDisplay = (entry.waterFlow || 'N/A');
+                if (entry.siteNumber && entry.riverName && entry.date) {
+                    cfsDisplay += ' <button type="button" onclick="showTableFlowGraph(' + i + ')" style="background: #3498db; border: none; border-radius: 3px; padding: 4px; cursor: pointer; margin-left: 5px;" title="Show Flow Graph">' +
+                        '<svg width="14" height="14" viewBox="0 0 24 24" fill="white">' +
+                        '<path d="M3,13H5V19H3V13M7,9H9V19H7V9M11,5H13V19H11V5M15,9H17V19H15V9M19,13H21V19H19V13Z"/>' +
+                        '</svg>' +
+                        '</button>';
+                }
+                
+                row.innerHTML = '<td>' + (entry.cityState || entry.zipcode || 'N/A') + '</td>' +
+                    '<td>' + new Date(entry.date).toLocaleDateString() + '</td>' +
+                    '<td>' + timeOnWater + '</td>' +
+                    '<td>' + locationDisplay + '</td>' +
+                    '<td>' + (entry.weatherTemp || 'N/A') + '</td>' +
+                    '<td>' + (entry.barometricPressure || 'N/A') + '</td>' +
+                    '<td>' + (entry.waterTemp || 'N/A') + '</td>' +
+                    '<td class="moon-phase" title="' + moonTitle + '">' + moonEmoji + '</td>' +
+                    '<td>' + (entry.riverName || 'Not specified') + '</td>' +
+                    '<td>' + cfsDisplay + '</td>' +
+                    '<td>' + windInfo + '</td>' +
+                    '<td>' + (entry.notes || 'No notes') + '</td>' +
+                    '<td>' + (entry.fliesUsed || 'Not specified') + '</td>' +
+                    '<td>' + (entry.targetSpecies || 'Not specified') + '</td>' +
+                    '<td>' + (entry.angler || 'Unknown') + '</td>' +
+                    '<td><button class="btn btn-primary" onclick="editEntry(' + i + ')" style="margin-right: 5px; padding: 5px 10px; font-size: 12px;">Edit</button>' +
+                    '<button class="btn btn-danger" onclick="deleteEntry(' + i + ')" style="padding: 5px 10px; font-size: 12px;">Delete</button></td>';
+                
+                tbody.appendChild(row);
+            }
+        }
+
+        function updateFilterOptions() {
+            var anglerSelect = document.getElementById('filterAngler');
+            var speciesSelect = document.getElementById('filterSpecies');
+            
+            if (!anglerSelect || !speciesSelect) return;
+            
+            anglerSelect.innerHTML = '<option value="">All Anglers</option>';
+            speciesSelect.innerHTML = '<option value="">All Species</option>';
+            
+            var anglers = [];
+            var species = [];
+            
+            for (var i = 0; i < fishingData.length; i++) {
+                if (fishingData[i].angler && anglers.indexOf(fishingData[i].angler) === -1) {
+                    anglers.push(fishingData[i].angler);
+                }
+                if (fishingData[i].targetSpecies && species.indexOf(fishingData[i].targetSpecies) === -1) {
+                    species.push(fishingData[i].targetSpecies);
+                }
+            }
+            
+            for (var j = 0; j < anglers.length; j++) {
+                var option = document.createElement('option');
+                option.value = anglers[j];
+                option.textContent = anglers[j];
+                anglerSelect.appendChild(option);
+            }
+            
+            for (var k = 0; k < species.length; k++) {
+                var option = document.createElement('option');
+                option.value = species[k];
+                option.textContent = species[k];
+                speciesSelect.appendChild(option);
+            }
+        }
+
+        function applyFilters() {
+            var dateFilter = document.getElementById('filterDate');
+            var anglerFilter = document.getElementById('filterAngler');
+            var speciesFilter = document.getElementById('filterSpecies');
+            var notesFilter = document.getElementById('searchNotes');
+            
+            var dateValue = dateFilter ? dateFilter.value : '';
+            var anglerValue = anglerFilter ? anglerFilter.value : '';
+            var speciesValue = speciesFilter ? speciesFilter.value : '';
+            var notesValue = notesFilter ? notesFilter.value.toLowerCase() : '';
+            
+            var rows = document.querySelectorAll('#fishingTableBody tr');
+            
+            for (var i = 0; i < rows.length; i++) {
+                var entry = fishingData[i];
+                if (!entry) continue;
+                
+                var show = true;
+                
+                if (dateValue && entry.date !== dateValue) show = false;
+                if (anglerValue && entry.angler !== anglerValue) show = false;
+                if (speciesValue && entry.targetSpecies !== speciesValue) show = false;
+                if (notesValue && (!entry.notes || entry.notes.toLowerCase().indexOf(notesValue) === -1)) show = false;
+                
+                rows[i].style.display = show ? '' : 'none';
+            }
+        }
+
+        // Hamburger Menu Functions
+        function toggleMenu() {
+            var hamburger = document.querySelector('.hamburger-menu');
+            var navMenu = document.getElementById('navMenu');
+            
+            hamburger.classList.toggle('active');
+            navMenu.classList.toggle('active');
+        }
+
+        function closeMenu() {
+            var hamburger = document.querySelector('.hamburger-menu');
+            var navMenu = document.getElementById('navMenu');
+            
+            hamburger.classList.remove('active');
+            navMenu.classList.remove('active');
+        }
+
+        // Menu Action Functions
+        function exportData() {
+            var dataStr = JSON.stringify(fishingData, null, 2);
+            var dataBlob = new Blob([dataStr], {type: 'application/json'});
+            var url = URL.createObjectURL(dataBlob);
+            var link = document.createElement('a');
+            link.href = url;
+            link.download = 'fishing-log-' + new Date().toISOString().split('T')[0] + '.json';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        }
+
+        function importData() {
+            var input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            input.onchange = function(e) {
+                var file = e.target.files[0];
+                if (file) {
+                    var reader = new FileReader();
+                    reader.onload = function(e) {
+                        try {
+                            var importedData = JSON.parse(e.target.result);
+                            if (Array.isArray(importedData)) {
+                                if (confirm('This will replace all existing data. Continue?')) {
+                                    fishingData = importedData;
+                                    saveToLocalStorage();
+                                    renderTable();
+                                    updateFilterOptions();
+                                    alert('Data imported successfully!');
+                                }
+                            } else {
+                                alert('Invalid file format. Please select a valid fishing log JSON file.');
+                            }
+                        } catch (error) {
+                            alert('Error reading file. Please ensure it\'s a valid JSON file.');
+                        }
+                    };
+                    reader.readAsText(file);
+                }
+            };
+            input.click();
+        }
+
+        function showAbout() {
+            alert('Fishing Log v2.0\n\nA comprehensive fishing log application with:\n• USGS stream flow data integration\n• Interactive mapping with location pins\n• Weather data and moon phase tracking\n• Export/import functionality\n• Flow rate graphing\n\nBuilt with modern web technologies for serious anglers.');
+        }
+
+        // Profile Functions
+        var userProfile = {};
+
+        function showProfileModal() {
+            loadUserProfile();
+            var modal = document.getElementById('profileModal');
+            modal.style.display = 'block';
+        }
+
+        function closeProfileModal() {
+            var modal = document.getElementById('profileModal');
+            modal.style.display = 'none';
+            hideProfileStatusMessage();
+        }
+
+        async function loadUserProfile() {
+            try {
+                const profile = await apiRequest('/profile');
+                userProfile = {
+                    firstName: profile.first_name || '',
+                    lastName: profile.last_name || '',
+                    address: profile.address || '',
+                    phone: profile.phone || '',
+                    email: profile.email || '',
+                    photoData: profile.photo_path ? `/uploads/${profile.photo_path.split('/').pop()}` : null
+                };
+                
+                document.getElementById('profileFirstName').value = userProfile.firstName;
+                document.getElementById('profileLastName').value = userProfile.lastName;
+                document.getElementById('profileAddress').value = userProfile.address;
+                document.getElementById('profilePhone').value = userProfile.phone;
+                document.getElementById('profileEmail').value = userProfile.email;
+                
+                // Load profile photo
+                if (userProfile.photoData) {
+                    displayProfilePhoto(userProfile.photoData);
+                } else {
+                    resetPhotoPreview();
+                }
+            } catch (error) {
+                console.error('Error loading profile:', error);
+                userProfile = {};
+            }
+        }
+
+        async function saveUserProfile() {
+            var form = document.getElementById('profileForm');
+            if (!form.checkValidity()) {
+                showProfileStatusMessage('Please fill in all required fields.', 'error');
+                return;
+            }
+
+            try {
+                const profileData = {
+                    first_name: document.getElementById('profileFirstName').value,
+                    last_name: document.getElementById('profileLastName').value,
+                    address: document.getElementById('profileAddress').value,
+                    phone: document.getElementById('profilePhone').value,
+                    photo_data: profilePhotoData
+                };
+
+                await apiRequest('/profile', {
+                    method: 'POST',
+                    body: JSON.stringify(profileData)
+                });
+
+                showProfileStatusMessage('Profile saved successfully!', 'success');
+                profilePhotoData = null;
+                await loadUserProfile(); // Reload from database
+            } catch (error) {
+                showProfileStatusMessage('Error saving profile: ' + error.message, 'error');
+                console.error('Profile save error:', error);
+            }
+            
+            // Update header if needed (could show user name)
+            updateHeaderWithProfile();
+        }
+
+        function updateHeaderWithProfile() {
+            // Future enhancement: Could show user name in header
+        }
+
+        function showProfileStatusMessage(message, type) {
+            var statusDiv = document.getElementById('profileStatusMessage');
+            if (statusDiv) {
+                statusDiv.textContent = message;
+                statusDiv.className = 'status-message status-' + type;
+                statusDiv.style.display = 'block';
+            }
+        }
+
+        function hideProfileStatusMessage() {
+            var statusDiv = document.getElementById('profileStatusMessage');
+            if (statusDiv) statusDiv.style.display = 'none';
+        }
+
+        // Profile Photo Functions
+        function handleProfilePhotoUpload(event) {
+            var file = event.target.files[0];
+            if (file) {
+                if (file.size > 5 * 1024 * 1024) { // 5MB limit
+                    showProfileStatusMessage('Photo must be smaller than 5MB', 'error');
+                    return;
+                }
+                
+                var reader = new FileReader();
+                reader.onload = function(e) {
+                    userProfile.photoData = e.target.result;
+                    displayProfilePhoto(e.target.result);
+                    showProfileStatusMessage('Photo uploaded. Click Save Profile to save changes.', 'success');
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function displayProfilePhoto(dataUrl) {
+            var img = document.getElementById('profilePhotoImg');
+            var placeholder = document.getElementById('photoPlaceholder');
+            var removeBtn = document.getElementById('removePhotoBtn');
+            
+            img.src = dataUrl;
+            img.style.display = 'block';
+            placeholder.style.display = 'none';
+            removeBtn.style.display = 'inline-block';
+        }
+
+        function removeProfilePhoto() {
+            if (confirm('Remove profile photo?')) {
+                userProfile.photoData = null;
+                resetPhotoPreview();
+                showProfileStatusMessage('Photo removed. Click Save Profile to save changes.', 'success');
+            }
+        }
+
+        async function changePassword() {
+            const currentPassword = document.getElementById('currentPassword').value;
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+
+            // Validation
+            if (!currentPassword || !newPassword || !confirmPassword) {
+                showProfileStatusMessage('All password fields are required.', 'error');
+                return;
+            }
+
+            if (newPassword.length < 6) {
+                showProfileStatusMessage('New password must be at least 6 characters long.', 'error');
+                return;
+            }
+
+            if (newPassword !== confirmPassword) {
+                showProfileStatusMessage('New passwords do not match.', 'error');
+                return;
+            }
+
+            if (currentPassword === newPassword) {
+                showProfileStatusMessage('New password must be different from current password.', 'error');
+                return;
+            }
+
+            try {
+                const result = await apiRequest('/auth/change-password', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        currentPassword: currentPassword,
+                        newPassword: newPassword
+                    })
+                });
+
+                if (result.error) {
+                    throw new Error(result.error);
+                }
+
+                // Clear password fields
+                document.getElementById('currentPassword').value = '';
+                document.getElementById('newPassword').value = '';
+                document.getElementById('confirmPassword').value = '';
+
+                showProfileStatusMessage('Password changed successfully!', 'success');
+            } catch (error) {
+                showProfileStatusMessage(error.message || 'Failed to change password.', 'error');
+            }
+        }
+
+        async function deleteAccount() {
+            const password = document.getElementById('deleteAccountPassword').value;
+
+            // Validation
+            if (!password) {
+                showProfileStatusMessage('Please enter your password to confirm account deletion.', 'error');
+                return;
+            }
+
+            // Multiple confirmation steps
+            const confirmStep1 = confirm(
+                'Are you absolutely sure you want to delete your account?\n\n' +
+                'This will permanently delete:\n' +
+                '• All your fishing entries\n' +
+                '• All your licenses\n' +
+                '• All your river data\n' +
+                '• Your profile information\n' +
+                '• All uploaded photos and documents\n\n' +
+                'This action cannot be undone!'
+            );
+
+            if (!confirmStep1) return;
+
+            const confirmStep2 = confirm(
+                'FINAL CONFIRMATION\n\n' +
+                'This is your last chance to cancel. Are you 100% certain you want to permanently delete your account and all associated data?\n\n' +
+                'Type "DELETE" in the next prompt to confirm.'
+            );
+
+            if (!confirmStep2) return;
+
+            const finalConfirm = prompt(
+                'Please type "DELETE" (in all caps) to confirm account deletion:'
+            );
+
+            if (finalConfirm !== 'DELETE') {
+                showProfileStatusMessage('Account deletion cancelled. You must type "DELETE" exactly to confirm.', 'error');
+                return;
+            }
+
+            try {
+                showProfileStatusMessage('Deleting account... Please wait.', 'info');
+                
+                const result = await apiRequest('/auth/delete-account', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        password: password
+                    })
+                });
+
+                if (result.error) {
+                    throw new Error(result.error);
+                }
+
+                // Clear password field
+                document.getElementById('deleteAccountPassword').value = '';
+
+                // Show success message briefly
+                showProfileStatusMessage('Account deleted successfully. You will be redirected to the login page.', 'success');
+
+                // Redirect to login after a brief delay
+                setTimeout(() => {
+                    // Reset authentication state
+                    isAuthenticated = false;
+                    currentUser = null;
+                    
+                    // Close profile modal
+                    closeProfileModal();
+                    
+                    // Show auth modal
+                    showAuthModal();
+                }, 2000);
+
+            } catch (error) {
+                showProfileStatusMessage(error.message || 'Failed to delete account.', 'error');
+            }
+        }
+
+        function resetPhotoPreview() {
+            var img = document.getElementById('profilePhotoImg');
+            var placeholder = document.getElementById('photoPlaceholder');
+            var removeBtn = document.getElementById('removePhotoBtn');
+            
+            img.style.display = 'none';
+            img.src = '';
+            placeholder.style.display = 'block';
+            removeBtn.style.display = 'none';
+        }
+
+        // River Flow Functions
+        var savedRivers = [];
+        var selectedRiver = null;
+        var riverFlowSearchTimeout;
+
+        function showRiverFlowModal() {
+            loadSavedRivers();
+            var modal = document.getElementById('riverFlowModal');
+            modal.style.display = 'block';
+            renderSavedRivers();
+        }
+
+        function closeRiverFlowModal() {
+            var modal = document.getElementById('riverFlowModal');
+            modal.style.display = 'none';
+            hideRiverFlowStatusMessage();
+            
+            // Clear search
+            document.getElementById('riverFlowSearch').value = '';
+            document.getElementById('riverFlowSearchResults').style.display = 'none';
+            selectedRiver = null;
+        }
+
+        // Rivers API Functions
+        async function loadSavedRivers() {
+            try {
+                const rivers = await apiRequest('/rivers');
+                savedRivers = rivers.map(river => ({
+                    id: river.id,
+                    siteNumber: river.site_number,
+                    riverName: river.river_name,
+                    location: river.location,
+                    currentFlow: river.current_flow,
+                    lastUpdated: river.last_updated
+                }));
+            } catch (error) {
+                console.error('Error loading rivers:', error);
+                savedRivers = [];
+            }
+        }
+
+        async function saveRiver(riverData) {
+            try {
+                const data = {
+                    site_number: riverData.siteNumber,
+                    river_name: riverData.riverName,
+                    location: riverData.location,
+                    current_flow: riverData.currentFlow
+                };
+
+                await apiRequest('/rivers', {
+                    method: 'POST',
+                    body: JSON.stringify(data)
+                });
+            } catch (error) {
+                console.error('Error saving river:', error);
+                throw error;
+            }
+        }
+
+        async function deleteRiver(riverId) {
+            try {
+                await apiRequest(`/rivers/${riverId}`, { method: 'DELETE' });
+            } catch (error) {
+                console.error('Error deleting river:', error);
+                throw error;
+            }
+        }
+
+        function searchRiversForFlow() {
+            var searchTerm = document.getElementById('riverFlowSearch').value.trim();
+            var resultsDiv = document.getElementById('riverFlowSearchResults');
+            
+            if (searchTerm.length < 3) {
+                resultsDiv.style.display = 'none';
+                selectedRiver = null;
+                return;
+            }
+            
+            clearTimeout(riverFlowSearchTimeout);
+            riverFlowSearchTimeout = setTimeout(function() {
+                performRiverFlowSearch(searchTerm);
+            }, 500);
+        }
+
+        function performRiverFlowSearch(searchTerm) {
+            var resultsDiv = document.getElementById('riverFlowSearchResults');
+            resultsDiv.innerHTML = '<div style="padding: 10px;">Searching...</div>';
+            resultsDiv.style.display = 'block';
+            
+            // Use the same popular rivers list from the main app
+            var popularRivers = [
+                {site_no: '05331000', site_name: 'Mississippi River at St. Paul, MN', state: 'MN'},
+                {site_no: '05330000', site_name: 'Minnesota River at Jordan, MN', state: 'MN'},
+                {site_no: '05340500', site_name: 'St. Croix River at Stillwater, MN', state: 'MN'},
+                {site_no: '05288500', site_name: 'Mississippi River at Fridley, MN', state: 'MN'},
+                {site_no: '05366800', site_name: 'Chippewa River at Grand Ave at Eau Claire, WI', state: 'WI'},
+                {site_no: '05365500', site_name: 'Chippewa River at Chippewa Falls, WI', state: 'WI'},
+                {site_no: '05370000', site_name: 'Eau Galle River at Spring Valley, WI', state: 'WI'},
+                {site_no: '05345000', site_name: 'Vermillion River Near Empire, MN', state: 'MN'},
+                {site_no: '05342000', site_name: 'Kinnickinnic River Near River Falls, WI', state: 'WI'},
+                {site_no: '05362000', site_name: 'Jump River at Sheldon, WI', state: 'WI'},
+                {site_no: '05359500', site_name: 'South Fork Flambeau River Near Phillips, WI', state: 'WI'},
+                {site_no: '05356000', site_name: 'Chippewa River Near Bruce, WI', state: 'WI'},
+                {site_no: '05394500', site_name: 'Prairie River Near Merrill, WI', state: 'WI'},
+                {site_no: '05395000', site_name: 'Wisconsin River at Merrill, WI', state: 'WI'},
+                {site_no: '05393700', site_name: 'Spirit River at Spirit Falls, WI', state: 'WI'},
+                {site_no: '09380000', site_name: 'Colorado River at Lees Ferry, AZ', state: 'AZ'},
+                {site_no: '06191500', site_name: 'Yellowstone River at Corwin Springs, MT', state: 'MT'},
+                {site_no: '12358500', site_name: 'Clark Fork at Deer Lodge, MT', state: 'MT'},
+                {site_no: '13337000', site_name: 'Snake River at Anatone, WA', state: 'WA'},
+                {site_no: '14211720', site_name: 'Sandy River below Bull Run River, OR', state: 'OR'},
+                {site_no: '01463500', site_name: 'Delaware River at Trenton, NJ', state: 'NJ'},
+                {site_no: '03086000', site_name: 'Beaver River at Beaver Falls, PA', state: 'PA'},
+                {site_no: '01632000', site_name: 'South Fork Shenandoah River at Front Royal, VA', state: 'VA'},
+                {site_no: '02102908', site_name: 'Haw River at Bynum, NC', state: 'NC'},
+                {site_no: '02334430', site_name: 'Chattahoochee River at Buford Dam, GA', state: 'GA'},
+                {site_no: '08158000', site_name: 'Colorado River at Austin, TX', state: 'TX'}
+            ];
+            
+            var matchingRivers = popularRivers.filter(function(river) {
+                return river.site_name.toLowerCase().includes(searchTerm.toLowerCase());
+            }).slice(0, 8);
+            
+            if (matchingRivers.length > 0) {
+                displayRiverFlowSearchResults(matchingRivers);
+            } else {
+                resultsDiv.innerHTML = '<div style="padding: 10px; color: #666;">No rivers found matching "' + searchTerm + '"</div>';
+            }
+        }
+
+        function displayRiverFlowSearchResults(rivers) {
+            var resultsDiv = document.getElementById('riverFlowSearchResults');
+            
+            var html = '';
+            rivers.forEach(function(river) {
+                html += '<div style="padding: 8px; border-bottom: 1px solid rgba(139, 69, 19, 0.2); cursor: pointer;" ' +
+                    'onmouseover="this.style.backgroundColor=\'rgba(139, 69, 19, 0.1)\'" ' +
+                    'onmouseout="this.style.backgroundColor=\'transparent\'" ' +
+                    'onclick="selectRiverForFlow(\'' + river.site_no + '\', \'' + river.site_name.replace(/'/g, "\\'") + '\')">' +
+                    '<div style="font-weight: bold; color: #CD853F;">' + river.site_no + ' - ' + river.site_name + '</div>' +
+                    '<div style="font-size: 12px; color: rgba(255, 255, 255, 0.7);">(' + river.state + ')</div>' +
+                    '</div>';
+            });
+            
+            resultsDiv.innerHTML = html;
+        }
+
+        function selectRiverForFlow(siteNumber, siteName) {
+            selectedRiver = {
+                siteNumber: siteNumber,
+                siteName: siteName
+            };
+            
+            document.getElementById('riverFlowSearch').value = siteName;
+            document.getElementById('riverFlowSearchResults').style.display = 'none';
+        }
+
+        async function addSelectedRiver() {
+            if (!selectedRiver) {
+                showRiverFlowStatusMessage('Please select a river from the search results first.', 'error');
+                return;
+            }
+            
+            // Check if river is already saved
+            var existingRiver = savedRivers.find(function(r) {
+                return r.siteNumber === selectedRiver.siteNumber;
+            });
+            
+            if (existingRiver) {
+                showRiverFlowStatusMessage('This river is already in your saved list.', 'error');
+                return;
+            }
+            
+            // Add river to saved list
+            var newRiver = {
+                siteNumber: selectedRiver.siteNumber,
+                siteName: selectedRiver.siteName,
+                dateAdded: new Date().toISOString(),
+                lastUpdated: null,
+                currentFlow: null,
+                flowStatus: 'Loading...'
+            };
+            
+            try {
+                await saveRiver({
+                    siteNumber: selectedRiver.siteNumber,
+                    riverName: selectedRiver.siteName,
+                    location: '',
+                    currentFlow: null
+                });
+                await loadSavedRivers(); // Reload from database
+                showRiverFlowStatusMessage('River added successfully!', 'success');
+            } catch (error) {
+                showRiverFlowStatusMessage('Error adding river: ' + error.message, 'error');
+                console.error('River add error:', error);
+                return;
+            }
+            
+            // Clear search
+            document.getElementById('riverFlowSearch').value = '';
+            selectedRiver = null;
+            
+            // Refresh display
+            renderSavedRivers();
+            
+            // Fetch flow data for the new river
+            updateRiverFlowData(savedRivers.length - 1);
+        }
+
+        function renderSavedRivers() {
+            var container = document.getElementById('savedRiversContainer');
+            var noRiversMsg = document.getElementById('noRiversMessage');
+            
+            if (savedRivers.length === 0) {
+                noRiversMsg.style.display = 'block';
+                return;
+            }
+            
+            noRiversMsg.style.display = 'none';
+            
+            var html = '';
+            savedRivers.forEach(function(river, index) {
+                html += createRiverCard(river, index);
+            });
+            
+            container.innerHTML = html;
+        }
+
+        function createRiverCard(river, index) {
+            var lastUpdatedText = river.lastUpdated ? 
+                'Updated: ' + new Date(river.lastUpdated).toLocaleString() : 
+                'Never updated';
+                
+            return '<div class="river-card">' +
+                '<div class="river-card-header">' +
+                    '<h4 class="river-name">' + river.siteName + '</h4>' +
+                    '<span class="river-site-number">Site: ' + river.siteNumber + '</span>' +
+                '</div>' +
+                '<div class="river-flow-data">' +
+                    '<div class="flow-metric">' +
+                        '<span class="flow-value">' + (river.currentFlow || 'N/A') + '</span>' +
+                        '<div class="flow-label">Current CFS</div>' +
+                    '</div>' +
+                    '<div class="flow-metric">' +
+                        '<span class="flow-value" style="font-size: 1rem;">' + river.flowStatus + '</span>' +
+                        '<div class="flow-label">Status</div>' +
+                    '</div>' +
+                '</div>' +
+                '<div class="river-actions">' +
+                    '<button class="btn btn-primary" onclick="updateRiverFlowData(' + index + ')">Refresh</button>' +
+                    '<button class="btn btn-primary" onclick="showRiverFlowGraph(' + index + ')">Graph</button>' +
+                    '<button class="btn btn-danger" onclick="removeRiver(' + index + ')">Remove</button>' +
+                '</div>' +
+                '<div class="last-updated">' + lastUpdatedText + '</div>' +
+            '</div>';
+        }
+
+        function updateRiverFlowData(index) {
+            var river = savedRivers[index];
+            river.flowStatus = 'Loading...';
+            renderSavedRivers();
+            
+            getFlowDataForDate(river.siteNumber, new Date().toISOString().split('T')[0])
+                .then(function(flowData) {
+                    if (flowData && flowData.flowRate !== null) {
+                        river.currentFlow = Math.round(flowData.flowRate) + ' CFS';
+                        river.flowStatus = 'Active';
+                        river.lastUpdated = new Date().toISOString();
+                    } else {
+                        river.currentFlow = 'No Data';
+                        river.flowStatus = 'No Data';
+                        river.lastUpdated = new Date().toISOString();
+                    }
+                    saveSavedRivers();
+                    renderSavedRivers();
+                })
+                .catch(function(error) {
+                    river.currentFlow = 'Error';
+                    river.flowStatus = 'Error';
+                    river.lastUpdated = new Date().toISOString();
+                    saveSavedRivers();
+                    renderSavedRivers();
+                });
+        }
+
+        function showRiverFlowGraph(index) {
+            var river = savedRivers[index];
+            var today = new Date().toISOString().split('T')[0];
+            
+            // Use the existing graph functionality
+            getHourlyFlowData(river.siteNumber, today)
+                .then(function(hourlyData) {
+                    // Show graph modal
+                    var modal = document.getElementById('flowGraphModal');
+                    var title = document.getElementById('graphTitle');
+                    title.textContent = 'Flow Rate Graph - ' + river.siteName + ' (Today)';
+                    modal.style.display = 'block';
+                    
+                    displayFlowChart(hourlyData, river.siteName, today);
+                })
+                .catch(function(error) {
+                    showRiverFlowStatusMessage('Error loading graph data.', 'error');
+                });
+        }
+
+        async function removeRiver(index) {
+            var river = savedRivers[index];
+            if (confirm('Remove "' + (river.riverName || river.siteName) + '" from your saved rivers?')) {
+                try {
+                    await deleteRiver(river.id);
+                    await loadSavedRivers(); // Reload from database
+                    renderSavedRivers();
+                    showRiverFlowStatusMessage('River removed successfully.', 'success');
+                } catch (error) {
+                    showRiverFlowStatusMessage('Error removing river: ' + error.message, 'error');
+                    console.error('River remove error:', error);
+                }
+            }
+        }
+
+        function showRiverFlowStatusMessage(message, type) {
+            var statusDiv = document.getElementById('riverFlowStatusMessage');
+            if (statusDiv) {
+                statusDiv.textContent = message;
+                statusDiv.className = 'status-message status-' + type;
+                statusDiv.style.display = 'block';
+            }
+        }
+
+        function hideRiverFlowStatusMessage() {
+            var statusDiv = document.getElementById('riverFlowStatusMessage');
+            if (statusDiv) statusDiv.style.display = 'none';
+        }
+
+        // License Library Functions
+        var fishingLicenses = [];
+        var currentLicenseDocument = null;
+
+        function showLicenseLibraryModal() {
+            loadFishingLicenses();
+            var modal = document.getElementById('licenseLibraryModal');
+            modal.style.display = 'block';
+            renderLicenses();
+            updateStateFilter();
+        }
+
+        function closeLicenseLibraryModal() {
+            var modal = document.getElementById('licenseLibraryModal');
+            modal.style.display = 'none';
+            document.getElementById('addLicenseForm').style.display = 'none';
+        }
+
+        // License API Functions
+        async function loadFishingLicenses() {
+            try {
+                const licenses = await apiRequest('/licenses');
+                fishingLicenses = licenses.map(license => ({
+                    id: license.id,
+                    state: license.state,
+                    type: license.type,
+                    startDate: license.start_date,
+                    endDate: license.end_date,
+                    notifications: license.notifications,
+                    documentData: license.document_path ? `/uploads/${license.document_path.split('/').pop()}` : null,
+                    documentType: license.document_type
+                }));
+            } catch (error) {
+                console.error('Error loading licenses:', error);
+                fishingLicenses = [];
+            }
+        }
+
+        async function saveFishingLicense(licenseData) {
+            try {
+                const data = {
+                    state: licenseData.state,
+                    type: licenseData.type,
+                    start_date: licenseData.startDate,
+                    end_date: licenseData.endDate,
+                    notifications: licenseData.notifications,
+                    document_data: licenseData.documentData,
+                    document_type: licenseData.documentType
+                };
+
+                const result = await apiRequest('/licenses', {
+                    method: 'POST',
+                    body: JSON.stringify(data)
+                });
+
+                return result;
+            } catch (error) {
+                console.error('Error saving license:', error);
+                throw error;
+            }
+        }
+
+        async function deleteFishingLicense(licenseId) {
+            try {
+                await apiRequest(`/licenses/${licenseId}`, { method: 'DELETE' });
+            } catch (error) {
+                console.error('Error deleting license:', error);
+                throw error;
+            }
+        }
+
+        function showAddLicenseForm() {
+            document.getElementById('addLicenseForm').style.display = 'block';
+            document.getElementById('licenseForm').reset();
+            resetLicenseDocumentPreview();
+            currentLicenseDocument = null;
+        }
+
+        function cancelAddLicense() {
+            document.getElementById('addLicenseForm').style.display = 'none';
+            document.getElementById('licenseForm').reset();
+            resetLicenseDocumentPreview();
+            currentLicenseDocument = null;
+        }
+
+        function updateStateFilter() {
+            var stateFilter = document.getElementById('stateFilter');
+            var uniqueStates = [];
+            
+            fishingLicenses.forEach(function(license) {
+                if (uniqueStates.indexOf(license.state) === -1) {
+                    uniqueStates.push(license.state);
+                }
+            });
+            
+            stateFilter.innerHTML = '<option value="">All States</option>';
+            uniqueStates.sort().forEach(function(state) {
+                stateFilter.innerHTML += '<option value="' + state + '">' + state + '</option>';
+            });
+        }
+
+        function filterLicensesByState() {
+            var selectedState = document.getElementById('stateFilter').value;
+            renderLicenses(selectedState);
+        }
+
+        function renderLicenses(filterState) {
+            var container = document.getElementById('licenseContainer');
+            
+            var filteredLicenses = filterState ? 
+                fishingLicenses.filter(function(license) { return license.state === filterState; }) : 
+                fishingLicenses;
+            
+            if (filteredLicenses.length === 0) {
+                var message = filterState ? 
+                    'No licenses found for ' + filterState + '.' : 
+                    'No licenses added yet.';
+                container.innerHTML = '<p style="text-align: center; color: rgba(255, 255, 255, 0.6);">' + message + '</p>';
+                return;
+            }
+            
+            var html = '';
+            filteredLicenses.forEach(function(license, index) {
+                html += createLicenseCard(license, fishingLicenses.indexOf(license));
+            });
+            
+            container.innerHTML = html;
+        }
+
+        function createLicenseCard(license, index) {
+            var isExpiringSoon = isLicenseExpiringSoon(license.endDate);
+            var daysUntilExpiration = getDaysUntilExpiration(license.endDate);
+            var cardClass = isExpiringSoon ? 'license-card expiring-soon' : 'license-card';
+            
+            var notificationHtml = '';
+            if (isExpiringSoon && license.notifications) {
+                notificationHtml = '<span class="expiration-notification">Expires in ' + daysUntilExpiration + ' days!</span>';
+            }
+            
+            var documentPreview = '';
+            if (license.documentData) {
+                if (license.documentType === 'pdf') {
+                    documentPreview = '<div style="text-align: center; color: rgba(255, 255, 255, 0.7); font-size: 12px;">📄 PDF Document</div>';
+                } else {
+                    documentPreview = '<img src="' + license.documentData + '" class="license-document-preview" alt="License">';
+                }
+            }
+            
+            return '<div class="' + cardClass + '">' +
+                '<div class="license-header">' +
+                    '<h4 class="license-title">' + license.state + ' ' + (license.type || 'Fishing License') + '</h4>' +
+                    notificationHtml +
+                '</div>' +
+                '<div class="license-details">' +
+                    '<div class="license-detail">' +
+                        '<span class="license-detail-value">' + new Date(license.startDate).toLocaleDateString() + '</span>' +
+                        '<div class="license-detail-label">Start Date</div>' +
+                    '</div>' +
+                    '<div class="license-detail">' +
+                        '<span class="license-detail-value">' + new Date(license.endDate).toLocaleDateString() + '</span>' +
+                        '<div class="license-detail-label">End Date</div>' +
+                    '</div>' +
+                    '<div class="license-detail">' +
+                        '<span class="license-detail-value">' + (license.notifications ? 'ON' : 'OFF') + '</span>' +
+                        '<div class="license-detail-label">Notifications</div>' +
+                    '</div>' +
+                '</div>' +
+                (documentPreview ? '<div style="text-align: center; margin: 10px 0;">' + documentPreview + '</div>' : '') +
+                '<div class="license-actions">' +
+                    '<button class="btn btn-primary" onclick="editLicense(' + index + ')">Edit</button>' +
+                    '<button class="btn btn-danger" onclick="deleteLicense(' + index + ')">Delete</button>' +
+                '</div>' +
+            '</div>';
+        }
+
+        function isLicenseExpiringSoon(endDate) {
+            var today = new Date();
+            var expiration = new Date(endDate);
+            var timeDiff = expiration.getTime() - today.getTime();
+            var daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
+            return daysDiff <= 30 && daysDiff >= 0;
+        }
+
+        function getDaysUntilExpiration(endDate) {
+            var today = new Date();
+            var expiration = new Date(endDate);
+            var timeDiff = expiration.getTime() - today.getTime();
+            return Math.ceil(timeDiff / (1000 * 3600 * 24));
+        }
+
+        function handleLicenseDocumentUpload(event) {
+            var file = event.target.files[0];
+            if (file) {
+                if (file.size > 10 * 1024 * 1024) { // 10MB limit
+                    showLicenseStatusMessage('File must be smaller than 10MB', 'error');
+                    return;
+                }
+                
+                var reader = new FileReader();
+                reader.onload = function(e) {
+                    currentLicenseDocument = {
+                        data: e.target.result,
+                        type: file.type.includes('pdf') ? 'pdf' : 'image',
+                        name: file.name
+                    };
+                    displayLicenseDocument();
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function displayLicenseDocument() {
+            var img = document.getElementById('licenseDocumentImg');
+            var placeholder = document.getElementById('licensePlaceholder');
+            var removeBtn = document.getElementById('removeLicenseBtn');
+            
+            if (currentLicenseDocument.type === 'pdf') {
+                placeholder.innerHTML = '<svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14,2 14,8 20,8"></polyline></svg><p>PDF: ' + currentLicenseDocument.name + '</p>';
+                img.style.display = 'none';
+            } else {
+                img.src = currentLicenseDocument.data;
+                img.style.display = 'block';
+                placeholder.style.display = 'none';
+            }
+            
+            removeBtn.style.display = 'inline-block';
+        }
+
+        function removeLicenseDocument() {
+            if (confirm('Remove document?')) {
+                currentLicenseDocument = null;
+                resetLicenseDocumentPreview();
+            }
+        }
+
+        function resetLicenseDocumentPreview() {
+            var img = document.getElementById('licenseDocumentImg');
+            var placeholder = document.getElementById('licensePlaceholder');
+            var removeBtn = document.getElementById('removeLicenseBtn');
+            
+            img.style.display = 'none';
+            img.src = '';
+            placeholder.style.display = 'block';
+            placeholder.innerHTML = '<svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14,2 14,8 20,8"></polyline></svg><p>No document selected</p>';
+            removeBtn.style.display = 'none';
+        }
+
+        async function saveLicense() {
+            var form = document.getElementById('licenseForm');
+            if (!form.checkValidity()) {
+                showLicenseStatusMessage('Please fill in all required fields.', 'error');
+                return;
+            }
+
+            var startDate = new Date(document.getElementById('licenseStartDate').value);
+            var endDate = new Date(document.getElementById('licenseEndDate').value);
+            
+            if (startDate >= endDate) {
+                showLicenseStatusMessage('End date must be after start date.', 'error');
+                return;
+            }
+
+            var newLicense = {
+                state: document.getElementById('licenseState').value,
+                type: document.getElementById('licenseType').value || 'Fishing License',
+                startDate: document.getElementById('licenseStartDate').value,
+                endDate: document.getElementById('licenseEndDate').value,
+                notifications: document.getElementById('enableNotifications').checked,
+                documentData: currentLicenseDocument ? currentLicenseDocument.data : null,
+                documentType: currentLicenseDocument ? currentLicenseDocument.type : null
+            };
+            
+            try {
+                await saveFishingLicense(newLicense);
+                await loadFishingLicenses(); // Reload from database
+                showLicenseStatusMessage('License added successfully!', 'success');
+                cancelAddLicense();
+                renderLicenses();
+                updateStateFilter();
+            } catch (error) {
+                showLicenseStatusMessage('Error saving license: ' + error.message, 'error');
+                console.error('License save error:', error);
+            }
+        }
+
+        function editLicense(index) {
+            // For now, just show alert - full edit functionality can be added later
+            alert('Edit functionality - coming soon!');
+        }
+
+        async function deleteLicense(index) {
+            var license = fishingLicenses[index];
+            if (confirm('Delete ' + license.state + ' license?')) {
+                try {
+                    await deleteFishingLicense(license.id);
+                    await loadFishingLicenses(); // Reload from database
+                    renderLicenses();
+                    updateStateFilter();
+                    showLicenseStatusMessage('License deleted.', 'success');
+                } catch (error) {
+                    showLicenseStatusMessage('Error deleting license: ' + error.message, 'error');
+                    console.error('License delete error:', error);
+                }
+            }
+        }
+
+        function showLicenseStatusMessage(message, type) {
+            var statusDiv = document.getElementById('licenseStatusMessage');
+            if (statusDiv) {
+                statusDiv.textContent = message;
+                statusDiv.className = 'status-message status-' + type;
+                statusDiv.style.display = 'block';
+                setTimeout(function() {
+                    statusDiv.style.display = 'none';
+                }, 3000);
+            }
+        }
+
+        function setupEventListeners() {
+            var filterDate = document.getElementById('filterDate');
+            var filterAngler = document.getElementById('filterAngler');
+            var filterSpecies = document.getElementById('filterSpecies');
+            var searchNotes = document.getElementById('searchNotes');
+            var fishingForm = document.getElementById('fishingForm');
+            
+            if (filterDate) {
+                filterDate.addEventListener('change', applyFilters);
+            }
+            
+            if (filterAngler) {
+                filterAngler.addEventListener('change', applyFilters);
+            }
+            
+            if (filterSpecies) {
+                filterSpecies.addEventListener('change', applyFilters);
+            }
+            
+            if (searchNotes) {
+                searchNotes.addEventListener('input', applyFilters);
+            }
+            
+            if (fishingForm) {
+                fishingForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    saveEntry();
+                });
+            }
+            
+            // Center map when city is selected (handled in selectCityState function)
+            // No additional event listener needed as centering happens automatically
+            
+            // Auto-refresh flow data when date changes
+            var entryDateInput = document.getElementById('entryDate');
+            if (entryDateInput) {
+                entryDateInput.addEventListener('change', function() {
+                    var selectedSiteNumber = document.getElementById('selectedSiteNumber').value;
+                    if (selectedSiteNumber && this.value) {
+                        getCurrentFlowData(selectedSiteNumber);
+                    }
+                });
+            }
+            
+            // Profile form event listeners
+            var profileForm = document.getElementById('profileForm');
+            if (profileForm) {
+                profileForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    saveUserProfile();
+                });
+            }
+            
+            var profilePhotoInput = document.getElementById('profilePhoto');
+            if (profilePhotoInput) {
+                profilePhotoInput.addEventListener('change', handleProfilePhotoUpload);
+            }
+            
+            // License form event listeners
+            var licenseForm = document.getElementById('licenseForm');
+            if (licenseForm) {
+                licenseForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    saveLicense();
+                });
+            }
+            
+            var licenseDocumentInput = document.getElementById('licenseDocument');
+            if (licenseDocumentInput) {
+                licenseDocumentInput.addEventListener('change', handleLicenseDocumentUpload);
+            }
+        }
+
+        // API Configuration
+        const API_BASE_URL = 'http://localhost:3004/api';
+
+        // API Helper Functions
+        async function apiRequest(endpoint, options = {}) {
+            try {
+                console.log(`Making API request to: ${API_BASE_URL}${endpoint}`);
+                console.log('Request options:', options);
+                
+                const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...options.headers
+                    },
+                    credentials: 'include', // Include cookies for authentication
+                    ...options
+                });
+
+                console.log(`API response status: ${response.status}`);
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error(`API Error Response: ${errorText}`);
+                    throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
+                }
+
+                const result = await response.json();
+                console.log('API response data:', result);
+                return result;
+            } catch (error) {
+                console.error('API Error:', error);
+                throw error;
+            }
+        }
+
+        // Fishing Entries API Functions
+        async function loadData() {
+            try {
+                const entries = await apiRequest('/fishing-entries');
+                fishingData = entries.map(entry => ({
+                    id: entry.id, // Include database ID for deletions
+                    date: entry.date,
+                    startTime: entry.start_time,
+                    endTime: entry.end_time,
+                    angler: entry.angler,
+                    species: entry.species,
+                    length: entry.length,
+                    weight: entry.weight,
+                    cityState: entry.city_state,
+                    latitude: entry.latitude,
+                    longitude: entry.longitude,
+                    siteNumber: entry.site_number,
+                    riverName: entry.river_name,
+                    waterFlow: entry.water_flow,
+                    weatherTemp: entry.weather_temp,
+                    barometricPressure: entry.barometric_pressure,
+                    windSpeed: entry.wind_speed,
+                    windDirection: entry.wind_direction,
+                    moonPhase: entry.moon_phase,
+                    notes: entry.notes,
+                    fliesUsed: entry.flies_used,
+                    photoData: entry.photo_path ? `/uploads/${entry.photo_path.split('/').pop()}` : null
+                }));
+            } catch (error) {
+                console.error('Error loading fishing entries:', error);
+                fishingData = [];
+            }
+        }
+
+        async function saveFishingEntry(entryData) {
+            try {
+                console.log('saveFishingEntry called with:', entryData);
+                
+                const data = {
+                    date: entryData.date,
+                    start_time: entryData.startTime,
+                    end_time: entryData.endTime,
+                    angler: entryData.angler,
+                    species: entryData.species,
+                    length: entryData.length,
+                    weight: entryData.weight,
+                    city_state: entryData.cityState,
+                    latitude: entryData.latitude,
+                    longitude: entryData.longitude,
+                    site_number: entryData.siteNumber,
+                    river_name: entryData.riverName,
+                    water_flow: entryData.waterFlow,
+                    weather_temp: entryData.weatherTemp,
+                    barometric_pressure: entryData.barometricPressure,
+                    wind_speed: entryData.windSpeed,
+                    wind_direction: entryData.windDirection,
+                    moon_phase: entryData.moonPhase,
+                    notes: entryData.notes,
+                    flies_used: entryData.fliesUsed,
+                    photo_data: entryData.photoData
+                };
+
+                console.log('Prepared data for API:', data);
+                console.log('Making API request to /fishing-entries');
+
+                const result = await apiRequest('/fishing-entries', {
+                    method: 'POST',
+                    body: JSON.stringify(data)
+                });
+
+                console.log('API request completed with result:', result);
+                return result;
+            } catch (error) {
+                console.error('Error saving fishing entry:', error);
+                throw error;
+            }
+        }
+
+        async function deleteFishingEntry(index) {
+            try {
+                const entry = fishingData[index];
+                if (entry && entry.id) {
+                    await apiRequest(`/fishing-entries/${entry.id}`, { method: 'DELETE' });
+                } else {
+                    throw new Error('Entry not found or missing ID');
+                }
+            } catch (error) {
+                console.error('Error deleting fishing entry:', error);
+                throw error;
+            }
+        }
+
+        // Initialize the application (will be called after authentication)
+        async function initializeApplication() {
+            try {
+                setupEventListeners();
+                // Data loading is now handled by initializeAppData() after authentication
+            } catch (error) {
+                console.error('Error initializing application:', error);
+                showStatusMessage('Error initializing application. Some features may not work properly.', 'error');
+            }
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            var entryModal = document.getElementById('entryModal');
+            var flowGraphModal = document.getElementById('flowGraphModal');
+            var profileModal = document.getElementById('profileModal');
+            var riverFlowModal = document.getElementById('riverFlowModal');
+            var licenseLibraryModal = document.getElementById('licenseLibraryModal');
+            var navMenu = document.getElementById('navMenu');
+            var hamburgerMenu = document.querySelector('.hamburger-menu');
+            
+            if (event.target === entryModal) {
+                closeModal();
+            }
+            if (event.target === flowGraphModal) {
+                closeFlowGraph();
+            }
+            if (event.target === profileModal) {
+                closeProfileModal();
+            }
+            if (event.target === riverFlowModal) {
+                closeRiverFlowModal();
+            }
+            if (event.target === licenseLibraryModal) {
+                closeLicenseLibraryModal();
+            }
+            
+            // Close hamburger menu when clicking outside
+            if (!hamburgerMenu.contains(event.target) && !navMenu.contains(event.target)) {
+                closeMenu();
+            }
+        };
+    </script>
+
+    <!-- Authentication Modal -->
+    <div id="authModal" class="modal">
+        <div class="modal-content" style="max-width: 400px;">
+            <span class="close" onclick="closeAuthModal()">&times;</span>
+            
+            <!-- Login Form -->
+            <div id="loginForm" style="display: block;">
+                <h2 style="color: #CD853F; text-align: center; margin-bottom: 20px;">Login to Your Fishing Log</h2>
+                
+                <form id="loginFormElement">
+                    <div class="form-group">
+                        <label for="loginUsername">Username or Email</label>
+                        <input type="text" id="loginUsername" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="loginPassword">Password</label>
+                        <input type="password" id="loginPassword" required>
+                    </div>
+                    
+                    <div class="actions">
+                        <button type="submit" class="btn btn-primary">Login</button>
+                        <button type="button" class="btn btn-secondary" onclick="showSignupForm()">Need an Account?</button>
+                    </div>
+                </form>
+                
+                <div id="loginStatusMessage" class="status-message"></div>
+            </div>
+            
+            <!-- Signup Form -->
+            <div id="signupForm" style="display: none;">
+                <h2 style="color: #CD853F; text-align: center; margin-bottom: 20px;">Create Your Fishing Log Account</h2>
+                
+                <form id="signupFormElement">
+                    <div class="form-group">
+                        <label for="signupUsername">Username *</label>
+                        <input type="text" id="signupUsername" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="signupEmail">Email *</label>
+                        <input type="email" id="signupEmail" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="signupPassword">Password *</label>
+                        <input type="password" id="signupPassword" required minlength="6">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="signupFirstName">First Name</label>
+                        <input type="text" id="signupFirstName">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="signupLastName">Last Name</label>
+                        <input type="text" id="signupLastName">
+                    </div>
+                    
+                    <div class="actions">
+                        <button type="submit" class="btn btn-primary">Sign Up</button>
+                        <button type="button" class="btn btn-secondary" onclick="showLoginForm()">Already Have Account?</button>
+                    </div>
+                </form>
+                
+                <div id="signupStatusMessage" class="status-message"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Authentication variables
+        let currentUser = null;
+        let isAuthenticated = false;
+
+        // Authentication functions
+        async function checkAuthStatus() {
+            try {
+                const response = await fetch('/api/auth/user', {
+                    method: 'GET',
+                    credentials: 'include'
+                });
+
+                if (response.ok) {
+                    currentUser = await response.json();
+                    isAuthenticated = true;
+                    updateUIForAuthenticatedUser();
+                } else {
+                    isAuthenticated = false;
+                    showAuthModal();
+                }
+            } catch (error) {
+                console.error('Auth check error:', error);
+                isAuthenticated = false;
+                showAuthModal();
+            }
+        }
+
+        function showAuthModal() {
+            document.getElementById('authModal').style.display = 'block';
+            showLoginForm();
+        }
+
+        function closeAuthModal() {
+            document.getElementById('authModal').style.display = 'none';
+        }
+
+        function showLoginForm() {
+            document.getElementById('loginForm').style.display = 'block';
+            document.getElementById('signupForm').style.display = 'none';
+            document.getElementById('loginFormElement').reset();
+            hideAuthStatusMessages();
+        }
+
+        function showSignupForm() {
+            document.getElementById('loginForm').style.display = 'none';
+            document.getElementById('signupForm').style.display = 'block';
+            document.getElementById('signupFormElement').reset();
+            hideAuthStatusMessages();
+        }
+
+        function hideAuthStatusMessages() {
+            document.getElementById('loginStatusMessage').style.display = 'none';
+            document.getElementById('signupStatusMessage').style.display = 'none';
+        }
+
+        function showAuthStatusMessage(elementId, message, type) {
+            const statusDiv = document.getElementById(elementId);
+            statusDiv.textContent = message;
+            statusDiv.className = 'status-message status-' + type;
+            statusDiv.style.display = 'block';
+        }
+
+        async function handleLogin(event) {
+            event.preventDefault();
+            
+            const username = document.getElementById('loginUsername').value;
+            const password = document.getElementById('loginPassword').value;
+
+            try {
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify({ username, password })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    currentUser = data;
+                    isAuthenticated = true;
+                    closeAuthModal();
+                    updateUIForAuthenticatedUser();
+                    await initializeAppData();
+                } else {
+                    showAuthStatusMessage('loginStatusMessage', data.error || 'Login failed', 'error');
+                }
+            } catch (error) {
+                showAuthStatusMessage('loginStatusMessage', 'Network error: ' + error.message, 'error');
+            }
+        }
+
+        async function handleSignup(event) {
+            event.preventDefault();
+            
+            const username = document.getElementById('signupUsername').value;
+            const email = document.getElementById('signupEmail').value;
+            const password = document.getElementById('signupPassword').value;
+            const firstName = document.getElementById('signupFirstName').value;
+            const lastName = document.getElementById('signupLastName').value;
+
+            try {
+                const response = await fetch('/api/auth/signup', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify({ 
+                        username, 
+                        email, 
+                        password, 
+                        firstName, 
+                        lastName 
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    currentUser = data;
+                    isAuthenticated = true;
+                    closeAuthModal();
+                    updateUIForAuthenticatedUser();
+                    await initializeAppData();
+                } else {
+                    showAuthStatusMessage('signupStatusMessage', data.error || 'Signup failed', 'error');
+                }
+            } catch (error) {
+                showAuthStatusMessage('signupStatusMessage', 'Network error: ' + error.message, 'error');
+            }
+        }
+
+        async function handleLogout() {
+            try {
+                await fetch('/api/auth/logout', {
+                    method: 'POST',
+                    credentials: 'include'
+                });
+
+                currentUser = null;
+                isAuthenticated = false;
+                showAuthModal();
+                clearAppData();
+            } catch (error) {
+                console.error('Logout error:', error);
+            }
+        }
+
+        function updateUIForAuthenticatedUser() {
+            // Show logout option in hamburger menu
+            const logoutLink = document.getElementById('logoutLink');
+            if (logoutLink) {
+                logoutLink.style.display = 'block';
+            }
+            
+            // Show admin link if user is admin
+            const adminLink = document.getElementById('adminLink');
+            if (adminLink && currentUser && currentUser.is_admin) {
+                adminLink.style.display = 'block';
+            }
+            
+            // Could add welcome message or user info to header if desired
+            console.log('Welcome back, ' + (currentUser.username || 'User') + '!');
+        }
+
+        function clearAppData() {
+            fishingData = [];
+            fishingLicenses = [];
+            savedRivers = [];
+            userProfile = {};
+            renderTable();
+        }
+
+        async function initializeAppData() {
+            try {
+                await loadData();
+                await loadFishingLicenses();
+                await loadUserProfile();
+                await loadSavedRivers();
+                renderTable();
+                updateFilterOptions();
+            } catch (error) {
+                console.error('Error initializing app data:', error);
+            }
+        }
+
+        // Setup form handlers
+        document.getElementById('loginFormElement').addEventListener('submit', handleLogin);
+        document.getElementById('signupFormElement').addEventListener('submit', handleSignup);
+
+        // Update API configuration to include credentials
+        const originalApiRequest = apiRequest;
+        apiRequest = async function(endpoint, options = {}) {
+            const newOptions = {
+                ...options,
+                credentials: 'include'
+            };
+            return originalApiRequest(endpoint, newOptions);
+        };
+
+        // Check authentication on page load
+        document.addEventListener('DOMContentLoaded', async function() {
+            await initializeApplication(); // Setup event listeners first
+            checkAuthStatus(); // Then check authentication
+        });
+    </script>
+
+</body>
+</html>

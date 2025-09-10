@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eddy's Notes - Fishing Log</title>
+    
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="/css/main.css">
+    
+    <!-- Leaflet CSS for maps -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" 
+          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" 
+          crossorigin=""/>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="/assets/eddysNotesLogo.png">
+</head>
+<body>
+    <div class="container">
+        <!-- Header Section -->
+        <div class="header-container">
+            <!-- Hamburger Menu -->
+            <div class="hamburger-menu" id="hamburgerMenu">
+                <div class="hamburger-line"></div>
+                <div class="hamburger-line"></div>
+                <div class="hamburger-line"></div>
+            </div>
+            
+            <!-- Navigation Menu -->
+            <div class="nav-menu" id="navMenu">
+                <a href="#" onclick="showProfileModal(); closeMenu();">My Profile</a>
+                <a href="#" onclick="showRiverFlowModal(); closeMenu();">River Flow</a>
+                <a href="#" onclick="showLicenseLibraryModal(); closeMenu();">License Library</a>
+                <a href="#" onclick="showAddModal(); closeMenu();">Add New Entry</a>
+                <a href="#" onclick="clearFilters(); closeMenu();">Clear Filters</a>
+                <a href="#" onclick="exportData(); closeMenu();">Export Data</a>
+                <a href="#" onclick="importData(); closeMenu();">Import Data</a>
+                <a href="#" onclick="showAbout(); closeMenu();">About</a>
+                <a href="/admin" id="adminLink" style="display: none; color: var(--brown-primary);" onclick="closeMenu();">🛡️ Admin Panel</a>
+                <a href="#" onclick="handleLogout(); closeMenu();" id="logoutLink" style="display: none; color: #ff6b6b;">Logout</a>
+            </div>
+            
+            <h1>
+                <img src="/assets/eddysNotesLogo.png" alt="Eddy's Notes Logo">
+                <span>Eddy's Notes</span>
+            </h1>
+        </div>
+        
+        <!-- Controls Section -->
+        <div class="controls">
+            <div class="filter-group">
+                <label for="filterDate">Filter by Date:</label>
+                <input type="date" id="filterDate" placeholder="Select date">
+            </div>
+            <div class="filter-group">
+                <label for="filterSpecies">Filter by Species:</label>
+                <select id="filterSpecies">
+                    <option value="">All Species</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="filterLocation">Filter by Location:</label>
+                <select id="filterLocation">
+                    <option value="">All Locations</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="filterBait">Filter by Bait:</label>
+                <select id="filterBait">
+                    <option value="">All Baits</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Data Table -->
+        <div class="table-container">
+            <table id="fishingTable">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Time</th>
+                        <th>Species</th>
+                        <th>Length</th>
+                        <th>Weight</th>
+                        <th>Location</th>
+                        <th>Bait</th>
+                        <th>Weather</th>
+                        <th>Moon</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Data will be populated by JavaScript -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Loading indicator -->
+        <div id="loadingIndicator" style="display: none; text-align: center; padding: 20px;">
+            <div class="loading-spinner"></div>
+            <p>Loading your fishing entries...</p>
+        </div>
+    </div>
+
+    <!-- Add/Edit Entry Modal -->
+    <div id="entryModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Add New Entry</h2>
+            <form id="entryForm" class="form-grid">
+                <div class="form-group">
+                    <label for="entryDate">Date:</label>
+                    <input type="date" id="entryDate" name="date" required>
+                </div>
+                <div class="form-group">
+                    <label for="entryTime">Time:</label>
+                    <input type="time" id="entryTime" name="time">
+                </div>
+                <div class="form-group">
+                    <label for="entrySpecies">Species:</label>
+                    <input type="text" id="entrySpecies" name="species" required>
+                </div>
+                <div class="form-group">
+                    <label for="entryLength">Length (inches):</label>
+                    <input type="number" id="entryLength" name="length" step="0.1">
+                </div>
+                <div class="form-group">
+                    <label for="entryWeight">Weight (lbs):</label>
+                    <input type="number" id="entryWeight" name="weight" step="0.1">
+                </div>
+                <div class="form-group">
+                    <label for="entryLocation">Location:</label>
+                    <input type="text" id="entryLocation" name="location">
+                </div>
+                <div class="form-group">
+                    <label for="entryBait">Bait Used:</label>
+                    <input type="text" id="entryBait" name="bait">
+                </div>
+                <div class="form-group">
+                    <label for="entryWeather">Weather:</label>
+                    <select id="entryWeather" name="weather">
+                        <option value="">Select Weather</option>
+                        <option value="Sunny">Sunny</option>
+                        <option value="Cloudy">Cloudy</option>
+                        <option value="Partly Cloudy">Partly Cloudy</option>
+                        <option value="Rainy">Rainy</option>
+                        <option value="Stormy">Stormy</option>
+                        <option value="Overcast">Overcast</option>
+                    </select>
+                </div>
+                <div class="form-group full-width">
+                    <label for="entryNotes">Notes:</label>
+                    <textarea id="entryNotes" name="notes" rows="3"></textarea>
+                </div>
+                <div class="form-group full-width">
+                    <button type="submit" class="btn btn-primary">Save Entry</button>
+                    <button type="button" class="btn" onclick="closeModal()">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- About Modal -->
+    <div id="aboutModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>About Eddy's Notes</h2>
+            <div class="modal-body">
+                <p>Eddy's Notes is a comprehensive fishing log application designed to help anglers track their catches, locations, and conditions.</p>
+                <h3>Features:</h3>
+                <ul>
+                    <li>📊 Track your fishing entries with detailed information</li>
+                    <li>🗺️ Location mapping and tracking</li>
+                    <li>🌙 Moon phase tracking</li>
+                    <li>📈 Export your data for analysis</li>
+                    <li>📱 Mobile-friendly responsive design</li>
+                </ul>
+                <p>Built with modern web technologies and designed with anglers in mind.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Profile Modal (placeholder) -->
+    <div id="profileModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>My Profile</h2>
+            <div class="modal-body">
+                <p>Profile management features coming soon...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- River Flow Modal (placeholder) -->
+    <div id="riverFlowModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>River Flow Information</h2>
+            <div class="modal-body">
+                <p>River flow data integration coming soon...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- License Library Modal (placeholder) -->
+    <div id="licenseLibraryModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>License Library</h2>
+            <div class="modal-body">
+                <p>License management features coming soon...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- External Scripts -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" 
+            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" 
+            crossorigin=""></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Application Scripts -->
+    <script src="/js/utils/helpers.js"></script>
+    <script src="/js/utils/api.js"></script>
+    <script src="/js/components/modal.js"></script>
+    <script src="/js/components/navigation.js"></script>
+    <script src="/js/main.js"></script>
+    
+    <!-- Inline scripts for legacy function support -->
+    <script>
+        // Global functions for backwards compatibility
+        function showProfileModal() {
+            if (window.app && window.app.modals.profileModal) {
+                window.app.modals.profileModal.open();
+            }
+        }
+
+        function showRiverFlowModal() {
+            if (window.app && window.app.modals.riverFlowModal) {
+                window.app.modals.riverFlowModal.open();
+            }
+        }
+
+        function showLicenseLibraryModal() {
+            if (window.app && window.app.modals.licenseLibraryModal) {
+                window.app.modals.licenseLibraryModal.open();
+            }
+        }
+
+        function showAbout() {
+            if (window.app && window.app.modals.aboutModal) {
+                window.app.modals.aboutModal.open();
+            }
+        }
+
+        function closeModal() {
+            // Close any open modal
+            Object.values(window.app?.modals || {}).forEach(modal => {
+                if (modal.modal && modal.modal.style.display === 'block') {
+                    modal.close();
+                }
+            });
+        }
+
+        function importData() {
+            Utils.showNotification('Import functionality coming soon', 'info');
+        }
+
+        async function handleLogout() {
+            try {
+                await api.logout();
+                window.location.reload();
+            } catch (error) {
+                console.error('Logout failed:', error);
+                Utils.showNotification('Logout failed', 'error');
+            }
+        }
+
+        // Edit and delete functions for table actions
+        function editEntry(id) {
+            console.log('Edit entry:', id);
+            // Implementation would go here
+        }
+
+        function deleteEntry(id) {
+            if (confirm('Are you sure you want to delete this entry?')) {
+                console.log('Delete entry:', id);
+                // Implementation would go here
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,83 @@
+/* Eddy's Notes - Theme CSS */
+/* Colors extracted from the logo: warm cream (#F5F5DC), forest green (#355E3B), rich brown (#A0522D) */
+
+:root {
+    --cream-primary: #F5F5DC;
+    --cream-secondary: #E6D7C1;
+    --cream-light: #FEFEFE;
+    --forest-green: #355E3B;
+    --forest-green-light: #2F4F2F;
+    --forest-green-dark: #1C2E1F;
+    --brown-primary: #A0522D;
+    --brown-secondary: #8B4513;
+    --brown-dark: #654321;
+    --text-primary: #2C3E2D;
+    --text-light: #F5F5DC;
+    --shadow-primary: rgba(44, 62, 45, 0.15);
+    --shadow-secondary: rgba(139, 69, 19, 0.1);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Roboto Condensed', 'Arial Narrow', sans-serif;
+    background: linear-gradient(135deg, var(--cream-secondary) 0%, #D2B48C 25%, var(--cream-primary) 50%, var(--cream-secondary) 100%);
+    background-attachment: fixed;
+    min-height: 100vh;
+    padding: 20px;
+    color: var(--text-primary);
+    position: relative;
+}
+
+body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: 
+        radial-gradient(circle at 20% 30%, rgba(47, 79, 47, 0.08) 0%, transparent 60%),
+        radial-gradient(circle at 80% 70%, rgba(139, 69, 19, 0.06) 0%, transparent 50%),
+        radial-gradient(circle at 50% 50%, rgba(53, 94, 59, 0.04) 0%, transparent 70%);
+    z-index: -1;
+    pointer-events: none;
+}
+
+.container {
+    max-width: 1400px;
+    margin: 0 auto;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 16px;
+    padding: 30px;
+    box-shadow: 
+        0 20px 60px var(--shadow-primary),
+        0 8px 32px var(--shadow-secondary),
+        inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    border: 2px solid var(--brown-primary);
+    backdrop-filter: blur(10px);
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: 'Bebas Neue', 'Arial Black', sans-serif;
+}
+
+/* Professional shadows and effects */
+.shadow-sm { box-shadow: 0 4px 8px var(--shadow-primary); }
+.shadow-md { box-shadow: 0 8px 16px var(--shadow-primary); }
+.shadow-lg { box-shadow: 0 12px 24px var(--shadow-primary); }
+
+.border-primary { border: 2px solid var(--brown-primary); }
+.border-secondary { border: 1px solid var(--brown-secondary); }
+
+.bg-cream { background: var(--cream-primary); }
+.bg-forest { background: var(--forest-green); }
+.bg-brown { background: var(--brown-primary); }
+
+.text-cream { color: var(--text-light); }
+.text-forest { color: var(--forest-green); }
+.text-brown { color: var(--brown-primary); }

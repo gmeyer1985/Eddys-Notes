@@ -1,0 +1,20 @@
+{
+  "appId": "com.gmeyer.fishinglog",
+  "appName": "Fishing Log",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https"
+  },
+  "ios": {
+    "contentInset": "automatic",
+    "scrollEnabled": true
+  },
+  "plugins": {
+    "Camera": {
+      "permissions": ["camera", "photos"]
+    },
+    "Geolocation": {
+      "permissions": ["location"]
+    }
+  }
+}

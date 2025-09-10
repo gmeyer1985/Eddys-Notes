@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fishing Log</title>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue:wght@400&family=Roboto+Condensed:wght@400;700&display=swap" rel="stylesheet">
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" 
+          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" 
+          crossorigin=""/>
+    
+    <!-- Leaflet JavaScript -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" 
+            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" 
+            crossorigin=""></script>
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- External Stylesheet -->
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header-container">
+            <!-- Hamburger Menu -->
+            <div class="hamburger-menu" onclick="toggleMenu()">
+                <div class="hamburger-line"></div>
+                <div class="hamburger-line"></div>
+                <div class="hamburger-line"></div>
+            </div>
+            
+            <!-- Navigation Menu -->
+            <div class="nav-menu" id="navMenu">
+                <a href="#" onclick="showAuthModal(); closeMenu();" id="loginLink" style="color: #4CAF50;">🔐 Login</a>
+                <a href="#" onclick="showProfileModal(); closeMenu();">My Profile</a>
+                <a href="#" onclick="showRiverFlowModal(); closeMenu();">River Flow</a>
+                <a href="#" onclick="showLicenseLibraryModal(); closeMenu();">License Library</a>
+                <a href="#" onclick="showAddModal(); closeMenu();">Add New Entry</a>
+                <a href="#" onclick="clearFilters(); closeMenu();">Clear Filters</a>
+                <a href="#" onclick="exportData(); closeMenu();">Export Data</a>
+                <a href="#" onclick="importData(); closeMenu();">Import Data</a>
+                <a href="#" onclick="showAbout(); closeMenu();">About</a>
+                <a href="/admin" id="adminLink" style="display: none; color: #ffa500;" onclick="closeMenu();">🛡️ Admin Panel</a>
+                <a href="#" onclick="handleLogout(); closeMenu();" id="logoutLink" style="display: none; color: #ff6b6b;">Logout</a>
+            </div>
+            
+            <h1>
+                <img src="art/eddysNotesLogo.png" alt="Eddy's Notes Logo">
+                <span>Eddy's Notes</span>
+            </h1>
+        </div>
+        
+        <div class="controls">
+            <div class="filter-group">
+                <label for="filterDate">Filter by Date:</label>
+                <input type="date" id="filterDate">
+            </div>
+            <div class="filter-group">
+                <label for="filterAngler">Filter by Angler:</label>
+                <select id="filterAngler">
+                    <option value="">All Anglers</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="filterSpecies">Filter by Species:</label>
+                <select id="filterSpecies">
+                    <option value="">All Species</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="searchNotes">Search Notes:</label>
+                <input type="text" id="searchNotes" placeholder="Search in notes...">
+            </div>
+            <div class="filter-group">
+                <button class="btn btn-primary" onclick="clearFilters()">Clear Filters</button>
+            </div>
+            <div class="filter-group">
+                <button class="btn btn-success" onclick="showAddModal()">Add New Entry</button>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <table id="fishingTable">
+                <thead>
+                    <tr>
+                        <th>City, State</th>
+                        <th>Date</th>
+                        <th>Time on Water</th>
+                        <th>Location</th>
+                        <th>Air Temp (°F)</th>
+                        <th>Barometric Pressure (inHg)</th>
+                        <th>Water Temp (°F)</th>
+                        <th>Moon Phase</th>
+                        <th>River/Stream</th>
+                        <th>Flow (CFS)</th>
+                        <th>Wind</th>
+                        <th>Notes</th>
+                        <th>Flies Used</th>
+                        <th>Target Species</th>
+                        <th>Angler</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="fishingTableBody">
+                    <!-- Data will be populated here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Add/Edit Modal -->
+    <div id="entryModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <h2 id="modalTitle">Add New Fishing Entry</h2>
+            <div class="status-message" id="statusMessage"></div>
+            
+            <form id="fishingForm">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="entryDate">Date *</label>
+                        <input type="date" id="entryDate" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="cityState">City, State *</label>
+                        <input type="text" id="cityState" placeholder="Minneapolis, MN" required oninput="searchCityState()">
+                        <div id="cityStateResults" style="display: none; max-height: 150px; overflow-y: auto; border: 1px solid rgba(139, 69, 19, 0.5); border-radius: 4px; margin-top: 5px; background: rgba(0, 0, 0, 0.9); position: relative; z-index: 100;"></div>
+                        <input type="hidden" id="selectedLat">
+                        <input type="hidden" id="selectedLon">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Time on Water</label>
+                        <div class="time-input-group">
+                            <input type="time" id="startTime" placeholder="Start Time">
+                            <input type="time" id="endTime" placeholder="End Time">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="waterTemp">Water Temperature (°F)</label>
+                        <input type="number" id="waterTemp" placeholder="65">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="riverSearch">River/Stream Name</label>
+                        <input type="text" id="riverSearch" placeholder="Search for river or stream..." oninput="searchRiversForEntry()">
+                        <div id="riverResults" style="display: none; max-height: 150px; overflow-y: auto; border: 1px solid rgba(139, 69, 19, 0.5); border-radius: 4px; margin-top: 5px; background: rgba(0, 0, 0, 0.9); position: relative; z-index: 100;"></div>
+                        <input type="hidden" id="selectedSiteNumber">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="waterFlow">Current Flow (CFS)</label>
+                        <input type="text" id="waterFlow" readonly placeholder="Select river to get flow data">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="targetSpecies">Target Species</label>
+                        <input type="text" id="targetSpecies" placeholder="e.g., Rainbow Trout">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="angler">Angler</label>
+                        <input type="text" id="angler" placeholder="Angler name">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="fliesUsed">Flies Used</label>
+                        <input type="text" id="fliesUsed" placeholder="e.g., Adams, Blue Winged Olive">
+                    </div>
+                    
+                    <div class="form-group full-width">
+                        <label for="notes">Notes</label>
+                        <textarea id="notes" rows="4" placeholder="Add your fishing notes here..."></textarea>
+                    </div>
+                    
+                    <div class="form-group full-width">
+                        <label for="fishingLocationMap">Fishing Location</label>
+                        <div id="fishingLocationMap"></div>
+                        <div class="map-instructions">Click on the map to drop a pin where you were fishing</div>
+                        <input type="hidden" id="fishingLat">
+                        <input type="hidden" id="fishingLon">
+                        <input type="hidden" id="fishingAddress">
+                    </div>
+                </div>
+                
+                <div class="actions">
+                    <button type="button" class="btn btn-danger" onclick="closeModal()">Cancel</button>
+                    <button type="submit" class="btn btn-success">Save Entry</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Flow Graph Modal -->
+    <div id="flowGraphModal" class="modal">
+        <div class="modal-content" style="max-width: 900px;">
+            <span class="close" onclick="closeFlowGraph()">&times;</span>
+            <h2 id="graphTitle">Flow Rate Graph</h2>
+            <div style="margin: 20px 0;">
+                <canvas id="flowChart" width="800" height="400"></canvas>
+            </div>
+            <div style="text-align: center; color: #666; font-size: 12px; margin-top: 10px;">
+                Data from USGS Water Services • Times in local timezone
+            </div>
+        </div>
+    </div>
+
+    <!-- Profile Modal -->
+    <div id="profileModal" class="modal">
+        <div class="modal-content" style="max-width: 650px;">
+            <span class="close" onclick="closeProfileModal()">&times;</span>
+            <h2 id="profileTitle">My Profile</h2>
+            <div class="status-message" id="profileStatusMessage"></div>
+            
+            <form id="profileForm">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="profileFirstName">First Name *</label>
+                        <input type="text" id="profileFirstName" required placeholder="Enter your first name">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="profileLastName">Last Name *</label>
+                        <input type="text" id="profileLastName" required placeholder="Enter your last name">
+                    </div>
+                    
+                    <div class="form-group full-width">
+                        <label for="profileAddress">Address</label>
+                        <textarea id="profileAddress" rows="3" placeholder="Enter your address"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="profilePhone">Phone Number</label>
+                        <input type="tel" id="profilePhone" placeholder="(555) 123-4567">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="profileEmail">Email Address</label>
+                        <input type="email" id="profileEmail" placeholder="your@email.com" readonly style="background-color: #2a2a2a; cursor: not-allowed;">
+                        <small style="color: #888; font-size: 12px; margin-top: 5px; display: block;">Email cannot be changed</small>
+                    </div>
+                    
+                    <div class="form-group full-width">
+                        <label for="profilePhoto">Profile Photo</label>
+                        <div class="photo-upload-container">
+                            <div class="photo-preview" id="photoPreview">
+                                <img id="profilePhotoImg" src="" alt="Profile Photo" style="display: none;">
+                                <div class="photo-placeholder" id="photoPlaceholder">
+                                    <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                        <circle cx="12" cy="7" r="4"></circle>
+                                    </svg>
+                                    <p>No photo selected</p>
+                                </div>
+                            </div>
+                            <input type="file" id="profilePhoto" accept="image/*" style="display: none;">
+                            <div class="photo-buttons">
+                                <button type="button" class="btn btn-primary" onclick="document.getElementById('profilePhoto').click();">Choose Photo</button>
+                                <button type="button" class="btn btn-danger" onclick="removeProfilePhoto();" id="removePhotoBtn" style="display: none;">Remove Photo</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Password Change Section -->
+                    <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid rgba(139, 69, 19, 0.3);">
+                        <h3 style="color: #8B4513; margin-bottom: 20px; font-size: 18px;">Change Password</h3>
+                        <div class="form-group">
+                            <label for="currentPassword">Current Password</label>
+                            <input type="password" id="currentPassword" placeholder="Enter current password">
+                        </div>
+                        <div class="form-group">
+                            <label for="newPassword">New Password</label>
+                            <input type="password" id="newPassword" placeholder="Enter new password">
+                        </div>
+                        <div class="form-group">
+                            <label for="confirmPassword">Confirm New Password</label>
+                            <input type="password" id="confirmPassword" placeholder="Confirm new password">
+                        </div>
+                        <button type="button" class="btn btn-primary" onclick="changePassword();">Change Password</button>
+                    </div>
+                    
+                    <!-- Delete Account Section -->
+                    <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid rgba(220, 20, 60, 0.3);">
+                        <h3 style="color: #DC143C; margin-bottom: 15px; font-size: 18px;">Delete Account</h3>
+                        <p style="color: #888; font-size: 14px; margin-bottom: 20px;">
+                            <strong>Warning:</strong> This action is permanent and cannot be undone. All your fishing entries, licenses, river data, and profile information will be permanently deleted.
+                        </p>
+                        <div class="form-group">
+                            <label for="deleteAccountPassword">Enter your password to confirm</label>
+                            <input type="password" id="deleteAccountPassword" placeholder="Enter your password">
+                        </div>
+                        <button type="button" class="btn" style="background-color: #DC143C; color: white; border-color: #DC143C;" onclick="deleteAccount();">Delete My Account</button>
+                    </div>
+                </div>
+                
+                <div class="actions">
+                    <button type="button" class="btn btn-danger" onclick="closeProfileModal()">Cancel</button>
+                    <button type="submit" class="btn btn-success">Save Profile</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- River Flow Modal -->
+    <div id="riverFlowModal" class="modal">
+        <div class="modal-content" style="max-width: 800px;">
+            <span class="close" onclick="closeRiverFlowModal()">&times;</span>
+            <h2 id="riverFlowTitle">River Flow Monitor</h2>
+            <div class="status-message" id="riverFlowStatusMessage"></div>
+            
+            <!-- Search Section -->
+            <div class="river-search-section">
+                <h3 style="color: #CD853F; margin-bottom: 15px; font-size: 1.2rem;">Add New River</h3>
+                <div class="form-grid" style="grid-template-columns: 2fr 1fr;">
+                    <div class="form-group">
+                        <label for="riverFlowSearch">Search for River/Stream</label>
+                        <input type="text" id="riverFlowSearch" placeholder="Search for river or stream..." oninput="searchRiversForFlow()">
+                        <div id="riverFlowSearchResults" style="display: none; max-height: 150px; overflow-y: auto; border: 1px solid rgba(139, 69, 19, 0.5); border-radius: 4px; margin-top: 5px; background: rgba(0, 0, 0, 0.8);"></div>
+                    </div>
+                    <div class="form-group">
+                        <label>&nbsp;</label>
+                        <button type="button" class="btn btn-success" onclick="addSelectedRiver();">Add River</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Saved Rivers Section -->
+            <div class="saved-rivers-section" style="margin-top: 30px;">
+                <h3 style="color: #CD853F; margin-bottom: 15px; font-size: 1.2rem;">Saved Rivers</h3>
+                <div class="rivers-container" id="savedRiversContainer">
+                    <div class="no-rivers-message" id="noRiversMessage">
+                        <p style="text-align: center; color: rgba(255, 255, 255, 0.6); font-style: italic; padding: 20px;">
+                            No rivers saved yet. Search and add rivers above to monitor their flow rates.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- License Library Modal -->
+    <div id="licenseLibraryModal" class="modal">
+        <div class="modal-content" style="max-width: 900px;">
+            <span class="close" onclick="closeLicenseLibraryModal()">&times;</span>
+            <h2>License Library</h2>
+            <div class="status-message" id="licenseStatusMessage"></div>
+            
+            <!-- Controls -->
+            <div class="license-controls" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <label for="stateFilter" style="margin: 0;">Filter by State:</label>
+                    <select id="stateFilter" onchange="filterLicensesByState()" style="min-width: 120px;">
+                        <option value="">All States</option>
+                    </select>
+                </div>
+                <button class="btn btn-success" onclick="showAddLicenseForm()">Add New License</button>
+            </div>
+            
+            <!-- Add License Form (Hidden by default) -->
+            <div id="addLicenseForm" style="display: none; background: rgba(139, 69, 19, 0.1); border: 1px solid rgba(139, 69, 19, 0.3); border-radius: 8px; padding: 20px; margin-bottom: 20px;">
+                <h3 style="color: #CD853F; margin-bottom: 15px;">Add New Fishing License</h3>
+                <form id="licenseForm">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="licenseState">State *</label>
+                            <select id="licenseState" required>
+                                <option value="">Select State</option>
+                                <option value="Alabama">Alabama</option>
+                                <option value="Alaska">Alaska</option>
+                                <option value="Arizona">Arizona</option>
+                                <option value="Arkansas">Arkansas</option>
+                                <option value="California">California</option>
+                                <option value="Colorado">Colorado</option>
+                                <option value="Connecticut">Connecticut</option>
+                                <option value="Delaware">Delaware</option>
+                                <option value="Florida">Florida</option>
+                                <option value="Georgia">Georgia</option>
+                                <option value="Hawaii">Hawaii</option>
+                                <option value="Idaho">Idaho</option>
+                                <option value="Illinois">Illinois</option>
+                                <option value="Indiana">Indiana</option>
+                                <option value="Iowa">Iowa</option>
+                                <option value="Kansas">Kansas</option>
+                                <option value="Kentucky">Kentucky</option>
+                                <option value="Louisiana">Louisiana</option>
+                                <option value="Maine">Maine</option>
+                                <option value="Maryland">Maryland</option>
+                                <option value="Massachusetts">Massachusetts</option>
+                                <option value="Michigan">Michigan</option>
+                                <option value="Minnesota">Minnesota</option>
+                                <option value="Mississippi">Mississippi</option>
+                                <option value="Missouri">Missouri</option>
+                                <option value="Montana">Montana</option>
+                                <option value="Nebraska">Nebraska</option>
+                                <option value="Nevada">Nevada</option>
+                                <option value="New Hampshire">New Hampshire</option>
+                                <option value="New Jersey">New Jersey</option>
+                                <option value="New Mexico">New Mexico</option>
+                                <option value="New York">New York</option>
+                                <option value="North Carolina">North Carolina</option>
+                                <option value="North Dakota">North Dakota</option>
+                                <option value="Ohio">Ohio</option>
+                                <option value="Oklahoma">Oklahoma</option>
+                                <option value="Oregon">Oregon</option>
+                                <option value="Pennsylvania">Pennsylvania</option>
+                                <option value="Rhode Island">Rhode Island</option>
+                                <option value="South Carolina">South Carolina</option>
+                                <option value="South Dakota">South Dakota</option>
+                                <option value="Tennessee">Tennessee</option>
+                                <option value="Texas">Texas</option>
+                                <option value="Utah">Utah</option>
+                                <option value="Vermont">Vermont</option>
+                                <option value="Virginia">Virginia</option>
+                                <option value="Washington">Washington</option>
+                                <option value="West Virginia">West Virginia</option>
+                                <option value="Wisconsin">Wisconsin</option>
+                                <option value="Wyoming">Wyoming</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="licenseType">License Type</label>
+                            <input type="text" id="licenseType" placeholder="e.g., Annual Fishing License, Trout Stamp">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="licenseStartDate">Start Date *</label>
+                            <input type="date" id="licenseStartDate" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="licenseEndDate">End Date *</label>
+                            <input type="date" id="licenseEndDate" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="enableNotifications" style="margin-right: 8px;">
+                                Enable expiration notifications
+                            </label>
+                        </div>
+                        
+                        <div class="form-group full-width">
+                            <label for="licenseDocument">License Document (Photo/PDF)</label>
+                            <div class="license-upload-container">
+                                <div class="license-preview" id="licensePreview">
+                                    <div class="license-placeholder" id="licensePlaceholder">
+                                        <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                            <polyline points="14,2 14,8 20,8"></polyline>
+                                        </svg>
+                                        <p>No document selected</p>
+                                    </div>
+                                    <img id="licenseDocumentImg" src="" alt="License Document" style="display: none; max-width: 100%; border-radius: 8px;">
+                                </div>
+                                <input type="file" id="licenseDocument" accept="image/*,.pdf" style="display: none;">
+                                <div class="license-upload-buttons">
+                                    <button type="button" class="btn btn-primary" onclick="document.getElementById('licenseDocument').click();">Choose File</button>
+                                    <button type="button" class="btn btn-danger" onclick="removeLicenseDocument();" id="removeLicenseBtn" style="display: none;">Remove</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="actions" style="margin-top: 20px;">
+                        <button type="button" class="btn btn-danger" onclick="cancelAddLicense()">Cancel</button>
+                        <button type="submit" class="btn btn-success">Save License</button>
+                    </div>
+                </form>
+            </div>
+            
+            <div id="licenseContainer">
+                <!-- Licenses will be displayed here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Include modular JavaScript files in dependency order -->
+    <!-- Utilities first -->
+    <script src="js/utils/moonPhase.js"></script>
+    <script src="js/utils/weather.js"></script>
+    <script src="js/utils/api.js"></script>
+    
+    <!-- Components -->
+    <script src="js/components/mapping.js"></script>
+    <script src="js/components/riverFlow.js"></script>
+    <script src="js/components/fishingEntry.js"></script>
+    <script src="js/components/userProfile.js"></script>
+    <script src="js/components/licenseLibrary.js"></script>
+    
+    <!-- Main application initialization -->
+    <script src="js/main.js"></script>
+
+    <!-- Authentication Modal -->
+    <div id="authModal" class="modal">
+        <div class="modal-content" style="max-width: 400px;">
+            <span class="close" onclick="closeAuthModal()">&times;</span>
+            
+            <!-- Login Form -->
+            <div id="loginForm" style="display: block;">
+                <h2 style="color: #CD853F; text-align: center; margin-bottom: 20px;">Login to Your Fishing Log</h2>
+                
+                <form id="loginFormElement">
+                    <div class="form-group">
+                        <label for="loginUsername">Username or Email</label>
+                        <input type="text" id="loginUsername" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="loginPassword">Password</label>
+                        <input type="password" id="loginPassword" required>
+                    </div>
+                    
+                    <div class="actions">
+                        <button type="submit" class="btn btn-primary">Login</button>
+                        <button type="button" class="btn btn-secondary" onclick="showSignupForm()">Need an Account?</button>
+                    </div>
+                </form>
+                
+                <div id="loginStatusMessage" class="status-message"></div>
+            </div>
+            
+            <!-- Signup Form -->
+            <div id="signupForm" style="display: none;">
+                <h2 style="color: #CD853F; text-align: center; margin-bottom: 20px;">Create Your Fishing Log Account</h2>
+                
+                <form id="signupFormElement">
+                    <div class="form-group">
+                        <label for="signupUsername">Username *</label>
+                        <input type="text" id="signupUsername" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="signupEmail">Email *</label>
+                        <input type="email" id="signupEmail" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="signupPassword">Password *</label>
+                        <input type="password" id="signupPassword" required minlength="6">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="signupFirstName">First Name</label>
+                        <input type="text" id="signupFirstName">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="signupLastName">Last Name</label>
+                        <input type="text" id="signupLastName">
+                    </div>
+                    
+                    <div class="actions">
+                        <button type="submit" class="btn btn-primary">Sign Up</button>
+                        <button type="button" class="btn btn-secondary" onclick="showLoginForm()">Already Have Account?</button>
+                    </div>
+                </form>
+                
+                <div id="signupStatusMessage" class="status-message"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Authentication variables
+        let currentUser = null;
+        let isAuthenticated = false;
+
+        // Authentication functions
+        async function checkAuthStatus() {
+            try {
+                const response = await fetch('/api/auth/user', {
+                    method: 'GET',
+                    credentials: 'include'
+                });
+
+                if (response.ok) {
+                    currentUser = await response.json();
+                    isAuthenticated = true;
+                    updateUIForAuthenticatedUser();
+                } else {
+                    isAuthenticated = false;
+                    showAuthModal();
+                }
+            } catch (error) {
+                console.error('Auth check error:', error);
+                isAuthenticated = false;
+                showAuthModal();
+            }
+        }
+
+        function showAuthModal() {
+            // Show login link and hide logout options when not authenticated
+            const loginLink = document.getElementById('loginLink');
+            const logoutLink = document.getElementById('logoutLink');
+            const adminLink = document.getElementById('adminLink');
+            if (loginLink) loginLink.style.display = 'block';
+            if (logoutLink) logoutLink.style.display = 'none';
+            if (adminLink) adminLink.style.display = 'none';
+            
+            document.getElementById('authModal').style.display = 'block';
+            showLoginForm();
+        }
+
+        function closeAuthModal() {
+            document.getElementById('authModal').style.display = 'none';
+        }
+
+        function showLoginForm() {
+            document.getElementById('loginForm').style.display = 'block';
+            document.getElementById('signupForm').style.display = 'none';
+            document.getElementById('loginFormElement').reset();
+            hideAuthStatusMessages();
+        }
+
+        function showSignupForm() {
+            document.getElementById('loginForm').style.display = 'none';
+            document.getElementById('signupForm').style.display = 'block';
+            document.getElementById('signupFormElement').reset();
+            hideAuthStatusMessages();
+        }
+
+        function hideAuthStatusMessages() {
+            document.getElementById('loginStatusMessage').style.display = 'none';
+            document.getElementById('signupStatusMessage').style.display = 'none';
+        }
+
+        function showAuthStatusMessage(elementId, message, type) {
+            const statusDiv = document.getElementById(elementId);
+            statusDiv.textContent = message;
+            statusDiv.className = 'status-message status-' + type;
+            statusDiv.style.display = 'block';
+        }
+
+        async function handleLogin(event) {
+            event.preventDefault();
+            
+            const username = document.getElementById('loginUsername').value;
+            const password = document.getElementById('loginPassword').value;
+
+            try {
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify({ username, password })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    currentUser = data;
+                    isAuthenticated = true;
+                    closeAuthModal();
+                    updateUIForAuthenticatedUser();
+                    await initializeAppData();
+                } else {
+                    showAuthStatusMessage('loginStatusMessage', data.error || 'Login failed', 'error');
+                }
+            } catch (error) {
+                showAuthStatusMessage('loginStatusMessage', 'Network error: ' + error.message, 'error');
+            }
+        }
+
+        async function handleSignup(event) {
+            event.preventDefault();
+            
+            const username = document.getElementById('signupUsername').value;
+            const email = document.getElementById('signupEmail').value;
+            const password = document.getElementById('signupPassword').value;
+            const firstName = document.getElementById('signupFirstName').value;
+            const lastName = document.getElementById('signupLastName').value;
+
+            try {
+                const response = await fetch('/api/auth/signup', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify({ 
+                        username, 
+                        email, 
+                        password, 
+                        firstName, 
+                        lastName 
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    currentUser = data;
+                    isAuthenticated = true;
+                    closeAuthModal();
+                    updateUIForAuthenticatedUser();
+                    await initializeAppData();
+                } else {
+                    showAuthStatusMessage('signupStatusMessage', data.error || 'Signup failed', 'error');
+                }
+            } catch (error) {
+                showAuthStatusMessage('signupStatusMessage', 'Network error: ' + error.message, 'error');
+            }
+        }
+
+        async function handleLogout() {
+            try {
+                await fetch('/api/auth/logout', {
+                    method: 'POST',
+                    credentials: 'include'
+                });
+
+                currentUser = null;
+                isAuthenticated = false;
+                showAuthModal();
+                clearAppData();
+            } catch (error) {
+                console.error('Logout error:', error);
+            }
+        }
+
+        function updateUIForAuthenticatedUser() {
+            // Hide login link and show logout option in hamburger menu
+            const loginLink = document.getElementById('loginLink');
+            const logoutLink = document.getElementById('logoutLink');
+            if (loginLink) loginLink.style.display = 'none';
+            if (logoutLink) logoutLink.style.display = 'block';
+            
+            // Show admin link if user is admin
+            const adminLink = document.getElementById('adminLink');
+            if (adminLink && currentUser && currentUser.is_admin) {
+                adminLink.style.display = 'block';
+            }
+            
+            // Could add welcome message or user info to header if desired
+            console.log('Welcome back, ' + (currentUser.username || 'User') + '!');
+        }
+
+        function clearAppData() {
+            fishingData = [];
+            fishingLicenses = [];
+            savedRivers = [];
+            userProfile = {};
+            renderTable();
+        }
+
+        async function initializeAppData() {
+            try {
+                await loadData();
+                await loadFishingLicenses();
+                await loadUserProfile();
+                await loadSavedRivers();
+                renderTable();
+                updateFilterOptions();
+            } catch (error) {
+                console.error('Error initializing app data:', error);
+            }
+        }
+
+        // Setup form handlers
+        document.getElementById('loginFormElement').addEventListener('submit', handleLogin);
+        document.getElementById('signupFormElement').addEventListener('submit', handleSignup);
+
+        // Update API configuration to include credentials
+        const originalApiRequest = apiRequest;
+        apiRequest = async function(endpoint, options = {}) {
+            const newOptions = {
+                ...options,
+                credentials: 'include'
+            };
+            return originalApiRequest(endpoint, newOptions);
+        };
+
+        // Check authentication on page load
+        document.addEventListener('DOMContentLoaded', async function() {
+            await initializeApplication(); // Setup event listeners first
+            checkAuthStatus(); // Then check authentication
+        });
+    </script>
+
+</body>
+</html>
