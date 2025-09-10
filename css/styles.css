@@ -568,18 +568,26 @@
 
         /* Mobile responsiveness for login */
         @media (max-width: 1024px) {
+            .login-overlay {
+                overflow-y: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+            
             .login-split-container {
                 flex-direction: column;
+                min-height: 100vh;
             }
             
             .login-artwork-side {
                 flex: none;
-                height: 40vh;
-                min-height: 300px;
+                height: 35vh;
+                min-height: 250px;
+                max-height: 300px;
+                flex-shrink: 0;
             }
             
             .artwork-overlay {
-                padding: 30px;
+                padding: 20px;
                 justify-content: center;
                 text-align: center;
             }
@@ -589,18 +597,19 @@
             }
             
             .brand-logo {
-                width: 80px;
-                height: 80px;
-                margin-bottom: 20px;
+                width: 70px;
+                height: 70px;
+                margin-bottom: 15px;
             }
             
             .brand-title {
-                font-size: 2.5rem;
+                font-size: 2rem;
+                margin-bottom: 8px;
             }
             
             .brand-subtitle {
-                font-size: 1.1rem;
-                margin-bottom: 15px;
+                font-size: 1rem;
+                margin-bottom: 10px;
             }
             
             .artwork-info {
@@ -608,87 +617,107 @@
             }
             
             .artwork-description {
-                font-size: 0.95rem;
-                max-width: 300px;
+                font-size: 0.9rem;
+                max-width: 280px;
                 margin: 0 auto;
             }
             
             .login-form-side {
-                flex: none;
-                height: 60vh;
-                padding: 20px;
+                flex: 1;
+                height: auto;
+                min-height: 65vh;
+                padding: 25px 20px 40px 20px;
+                overflow-y: auto;
+                -webkit-overflow-scrolling: touch;
             }
             
             .login-header h2 {
-                font-size: 2rem;
+                font-size: 1.8rem;
             }
         }
 
         @media (max-width: 768px) {
+            .login-overlay {
+                height: 100vh;
+                overflow-y: scroll;
+                -webkit-overflow-scrolling: touch;
+            }
+            
+            .login-split-container {
+                min-height: 100%;
+                flex-direction: column;
+            }
+            
             .login-artwork-side {
-                height: 30vh;
-                min-height: 200px;
-                max-height: 250px;
+                height: 25vh;
+                min-height: 180px;
+                max-height: 200px;
+                flex-shrink: 0;
             }
             
             .artwork-overlay {
-                padding: 15px;
+                padding: 12px;
             }
             
             .brand-logo {
-                width: 50px;
-                height: 50px;
-                margin-bottom: 10px;
+                width: 45px;
+                height: 45px;
+                margin-bottom: 8px;
             }
             
             .brand-title {
-                font-size: 1.6rem;
-                margin-bottom: 5px;
+                font-size: 1.4rem;
+                margin-bottom: 3px;
             }
             
             .brand-subtitle {
-                font-size: 0.9rem;
-                margin-bottom: 10px;
-            }
-            
-            .artwork-description {
-                font-size: 0.8rem;
-                line-height: 1.3;
-                display: none; /* Hide description on small mobile to save space */
-            }
-            
-            .login-form-side {
-                height: auto;
-                min-height: 70vh;
-                padding: 20px 15px;
-                overflow-y: auto;
-            }
-            
-            .login-header {
-                margin-bottom: 20px;
-            }
-            
-            .login-header h2 {
-                font-size: 1.6rem;
+                font-size: 0.85rem;
                 margin-bottom: 5px;
             }
             
+            .artwork-description {
+                display: none; /* Hide description on mobile to save space */
+            }
+            
+            .login-form-side {
+                flex: 1;
+                height: auto;
+                min-height: calc(75vh - 60px);
+                padding: 15px;
+                padding-bottom: 60px; /* Extra space at bottom */
+                overflow: visible;
+            }
+            
+            .login-container {
+                height: auto;
+                max-width: none;
+            }
+            
+            .login-header {
+                margin-bottom: 15px;
+            }
+            
+            .login-header h2 {
+                font-size: 1.5rem;
+                margin-bottom: 3px;
+            }
+            
             .login-header p {
-                font-size: 0.95rem;
+                font-size: 0.9rem;
                 margin-bottom: 0;
             }
             
             .login-tabs {
-                margin-bottom: 20px;
+                margin-bottom: 15px;
             }
             
             .tab-button {
-                padding: 10px 15px;
+                padding: 10px 12px;
                 font-size: 14px;
             }
             
             .auth-form .form-group {
-                margin-bottom: 15px;
+                margin-bottom: 12px;
             }
             
             .auth-form .form-row {
@@ -699,142 +728,186 @@
             .auth-form input {
                 padding: 14px;
                 font-size: 16px; /* Prevents zoom on iOS */
+                border-radius: 6px;
             }
             
             .auth-button {
-                padding: 14px;
+                padding: 16px;
                 font-size: 16px;
-                margin-top: 15px;
-            }
-            
-            .login-form-container {
-                margin: 0;
+                margin-top: 20px;
+                margin-bottom: 15px;
             }
             
             .auth-message {
-                margin-top: 15px;
+                margin-top: 10px;
                 padding: 10px;
                 font-size: 14px;
+                margin-bottom: 15px;
             }
         }
 
         @media (max-width: 480px) {
-            .login-artwork-side {
-                height: 25vh;
-                min-height: 180px;
-                max-height: 200px;
-            }
-            
-            .artwork-overlay {
-                padding: 10px;
-            }
-            
-            .brand-logo {
-                width: 40px;
-                height: 40px;
-                margin-bottom: 8px;
-            }
-            
-            .brand-title {
-                font-size: 1.4rem;
-                margin-bottom: 3px;
-            }
-            
-            .brand-subtitle {
-                font-size: 0.8rem;
-                margin-bottom: 5px;
-            }
-            
-            .login-form-side {
-                height: auto;
-                min-height: 75vh;
-                padding: 15px 10px;
-                overflow-y: auto;
-            }
-            
-            .login-header {
-                margin-bottom: 15px;
-            }
-            
-            .login-header h2 {
-                font-size: 1.4rem;
-                margin-bottom: 3px;
-            }
-            
-            .login-header p {
-                font-size: 0.9rem;
-            }
-            
-            .login-tabs {
-                margin-bottom: 15px;
-            }
-            
-            .tab-button {
-                padding: 8px 12px;
-                font-size: 13px;
-            }
-            
-            .auth-form .form-group {
-                margin-bottom: 12px;
-            }
-            
-            .auth-form input {
-                padding: 12px;
-                font-size: 16px; /* Prevents zoom on iOS */
-            }
-            
-            .auth-button {
-                padding: 12px;
-                font-size: 15px;
-                margin-top: 10px;
-            }
-        }
-
-        /* Extra small mobile devices */
-        @media (max-width: 375px) {
             .login-artwork-side {
                 height: 20vh;
                 min-height: 160px;
                 max-height: 180px;
             }
             
-            .login-form-side {
-                min-height: 80vh;
-                padding: 10px;
+            .artwork-overlay {
+                padding: 8px;
             }
             
-            .login-header h2 {
-                font-size: 1.2rem;
+            .brand-logo {
+                width: 35px;
+                height: 35px;
+                margin-bottom: 5px;
             }
             
             .brand-title {
                 font-size: 1.2rem;
+                margin-bottom: 2px;
+            }
+            
+            .brand-subtitle {
+                font-size: 0.75rem;
+                margin-bottom: 3px;
+            }
+            
+            .login-form-side {
+                height: auto;
+                min-height: calc(80vh - 40px);
+                padding: 12px;
+                padding-bottom: 50px; /* Extra bottom padding */
+                overflow: visible;
+            }
+            
+            .login-header {
+                margin-bottom: 12px;
+            }
+            
+            .login-header h2 {
+                font-size: 1.3rem;
+                margin-bottom: 2px;
+            }
+            
+            .login-header p {
+                font-size: 0.85rem;
+            }
+            
+            .login-tabs {
+                margin-bottom: 12px;
+            }
+            
+            .tab-button {
+                padding: 8px 10px;
+                font-size: 13px;
             }
             
             .auth-form .form-group {
                 margin-bottom: 10px;
             }
-        }
-
-        /* Ensure form is always scrollable on mobile */
-        @media (max-height: 700px) and (max-width: 768px) {
-            .login-form-side {
-                height: auto !important;
-                min-height: auto !important;
-                max-height: none !important;
-                overflow-y: auto;
-                padding-bottom: 30px;
+            
+            .auth-form input {
+                padding: 13px;
+                font-size: 16px; /* Prevents zoom on iOS */
             }
             
-            .login-split-container {
-                min-height: 100vh;
-                flex-direction: column;
+            .auth-button {
+                padding: 14px;
+                font-size: 16px;
+                margin-top: 15px;
+                margin-bottom: 12px;
+            }
+            
+            .auth-message {
+                margin-bottom: 12px;
+            }
+        }
+
+        /* Extra small mobile devices */
+        @media (max-width: 375px) {
+            .login-artwork-side {
+                height: 18vh;
+                min-height: 140px;
+                max-height: 160px;
+            }
+            
+            .login-form-side {
+                min-height: calc(82vh - 30px);
+                padding: 10px;
+                padding-bottom: 40px;
+            }
+            
+            .login-header h2 {
+                font-size: 1.1rem;
+            }
+            
+            .brand-title {
+                font-size: 1.1rem;
+            }
+            
+            .auth-form .form-group {
+                margin-bottom: 8px;
+            }
+            
+            .auth-form input {
+                padding: 12px;
+            }
+            
+            .auth-button {
+                padding: 13px;
+                margin-top: 12px;
+            }
+        }
+
+        /* Short screens - prioritize form space */
+        @media (max-height: 700px) {
+            .login-overlay {
+                overflow-y: scroll !important;
             }
             
             .login-artwork-side {
-                height: 25vh;
-                max-height: 200px;
-                flex-shrink: 0;
+                height: 20vh !important;
+                max-height: 160px !important;
+                min-height: 120px !important;
+            }
+            
+            .login-form-side {
+                height: auto !important;
+                min-height: calc(80vh - 40px) !important;
+                padding-bottom: 40px !important;
+                overflow: visible !important;
+            }
+            
+            .artwork-description {
+                display: none !important;
+            }
+        }
+
+        /* Very short screens - extreme space optimization */
+        @media (max-height: 600px) {
+            .login-artwork-side {
+                height: 15vh !important;
+                max-height: 120px !important;
+                min-height: 100px !important;
+            }
+            
+            .login-form-side {
+                min-height: calc(85vh - 30px) !important;
+                padding: 8px !important;
+                padding-bottom: 30px !important;
+            }
+            
+            .login-header {
+                margin-bottom: 8px !important;
+            }
+            
+            .login-tabs {
+                margin-bottom: 8px !important;
+            }
+            
+            .auth-form .form-group {
+                margin-bottom: 8px !important;
             }
         }
 
