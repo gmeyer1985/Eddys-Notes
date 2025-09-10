@@ -210,9 +210,13 @@ function hideStatusMessage() {
 
 function renderTable() {
     var tbody = document.getElementById('fishingTableBody');
+    var mobileContainer = document.getElementById('mobileEntriesContainer');
     if (!tbody) return;
     
     tbody.innerHTML = '';
+    if (mobileContainer) {
+        mobileContainer.innerHTML = '';
+    }
 
     for (var i = 0; i < fishingData.length; i++) {
         var entry = fishingData[i];
@@ -303,6 +307,89 @@ function renderTable() {
             '<button class="btn btn-danger" onclick="deleteEntry(' + i + ')" style="padding: 5px 10px; font-size: 12px;">Delete</button></td>';
         
         tbody.appendChild(row);
+        
+        // Create mobile card
+        if (mobileContainer) {
+            var card = document.createElement('div');
+            card.className = 'mobile-entry-card';
+            
+            card.innerHTML = 
+                '<div class="card-header">' +
+                    '<h3>' + (entry.cityState || entry.zipcode || 'Unknown Location') + '</h3>' +
+                    '<span class="date">' + new Date(entry.date).toLocaleDateString() + '</span>' +
+                '</div>' +
+                '<div class="card-body">' +
+                    '<div class="card-section">' +
+                        '<div class="card-row">' +
+                            '<span class="label">Time:</span>' +
+                            '<span class="value">' + timeOnWater + '</span>' +
+                        '</div>' +
+                        '<div class="card-row">' +
+                            '<span class="label">Location:</span>' +
+                            '<span class="value">' + locationDisplay + '</span>' +
+                        '</div>' +
+                        '<div class="card-row">' +
+                            '<span class="label">River/Stream:</span>' +
+                            '<span class="value">' + (entry.riverName || 'Not specified') + '</span>' +
+                        '</div>' +
+                    '</div>' +
+                    '<div class="card-section">' +
+                        '<div class="card-row">' +
+                            '<span class="label">Air Temp:</span>' +
+                            '<span class="value">' + (entry.weatherTemp || 'N/A') + '°F</span>' +
+                        '</div>' +
+                        '<div class="card-row">' +
+                            '<span class="label">Water Temp:</span>' +
+                            '<span class="value">' + (entry.waterTemp || 'N/A') + '°F</span>' +
+                        '</div>' +
+                        '<div class="card-row">' +
+                            '<span class="label">Pressure:</span>' +
+                            '<span class="value">' + (entry.barometricPressure || 'N/A') + ' inHg</span>' +
+                        '</div>' +
+                    '</div>' +
+                    '<div class="card-section">' +
+                        '<div class="card-row">' +
+                            '<span class="label">Moon Phase:</span>' +
+                            '<span class="value moon-phase" title="' + moonTitle + '">' + moonEmoji + '</span>' +
+                        '</div>' +
+                        '<div class="card-row">' +
+                            '<span class="label">Flow:</span>' +
+                            '<span class="value">' + (entry.waterFlow || 'N/A') + ' CFS' + 
+                            (entry.siteNumber && entry.riverName && entry.date ? 
+                                ' <button type="button" onclick="showTableFlowGraph(' + i + ')" style="background: #3498db; border: none; border-radius: 4px; padding: 6px 8px; cursor: pointer; margin-left: 8px; color: white; font-size: 12px;" title="Show Flow Graph">' +
+                                '<svg width="12" height="12" viewBox="0 0 24 24" fill="white">' +
+                                '<path d="M3,13H5V19H3V13M7,9H9V19H7V9M11,5H13V19H11V5M15,9H17V19H15V9M19,13H21V19H19V13Z"/>' +
+                                '</svg> Graph' +
+                                '</button>' : '') + '</span>' +
+                        '</div>' +
+                        '<div class="card-row">' +
+                            '<span class="label">Wind:</span>' +
+                            '<span class="value">' + windInfo + '</span>' +
+                        '</div>' +
+                    '</div>' +
+                    '<div class="card-section">' +
+                        '<div class="card-row">' +
+                            '<span class="label">Target Species:</span>' +
+                            '<span class="value">' + (entry.targetSpecies || 'Not specified') + '</span>' +
+                        '</div>' +
+                        '<div class="card-row">' +
+                            '<span class="label">Flies Used:</span>' +
+                            '<span class="value">' + (entry.fliesUsed || 'Not specified') + '</span>' +
+                        '</div>' +
+                        '<div class="card-row">' +
+                            '<span class="label">Angler:</span>' +
+                            '<span class="value">' + (entry.angler || 'Unknown') + '</span>' +
+                        '</div>' +
+                    '</div>' +
+                    (entry.notes ? '<div class="card-section"><div class="notes"><span class="label">Notes:</span><p>' + entry.notes + '</p></div></div>' : '') +
+                '</div>' +
+                '<div class="card-actions">' +
+                    '<button class="btn btn-primary" onclick="editEntry(' + i + ')">Edit</button>' +
+                    '<button class="btn btn-danger" onclick="deleteEntry(' + i + ')">Delete</button>' +
+                '</div>';
+                
+            mobileContainer.appendChild(card);
+        }
     }
 }
 

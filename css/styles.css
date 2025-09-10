@@ -266,15 +266,16 @@
         }
 
         input[type="date"]::-webkit-calendar-picker-indicator {
-            filter: invert(0.3) sepia(1) saturate(2) hue-rotate(90deg);
+            filter: invert(0.7) brightness(1.5) sepia(0.8) saturate(2) hue-rotate(90deg);
             cursor: pointer;
             opacity: 1 !important;
             background-image: none;
-            width: 20px;
-            height: 20px;
+            width: 24px;
+            height: 24px;
             position: relative;
-            z-index: 10;
+            z-index: 1000;
             background-color: transparent;
+            margin-right: 8px;
         }
 
         /* Alternative approach for date picker icon */
@@ -289,10 +290,46 @@
 
         /* Fallback: Add custom calendar icon */
         .form-group input[type="date"] {
-            background-image: url('data:image/svg+xml;charset=UTF-8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="white" viewBox="0 0 16 16"><path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5zM1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4H1z"/></svg>');
+            background-image: url('data:image/svg+xml;charset=UTF-8,<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="%23A0522D" viewBox="0 0 16 16"><path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5zM1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4H1z"/></svg>');
             background-repeat: no-repeat;
-            background-position: right 10px center;
-            background-size: 16px 16px;
+            background-position: right 12px center;
+            background-size: 20px 20px;
+            padding-right: 40px;
+        }
+        
+        /* Modal specific date input styling */
+        .modal input[type="date"]::-webkit-calendar-picker-indicator {
+            filter: invert(0.4) sepia(1) saturate(3) hue-rotate(25deg) brightness(1.2);
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+            opacity: 1 !important;
+            z-index: 1001;
+        }
+        
+        .modal .form-group input[type="date"] {
+            background-image: url('data:image/svg+xml;charset=UTF-8,<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="%23A0522D" viewBox="0 0 16 16"><path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5zM1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4H1z"/></svg>');
+            position: relative;
+        }
+        
+        /* Firefox date input support */
+        input[type="date"]::-moz-calendar-picker-indicator {
+            opacity: 1;
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+        }
+        
+        /* For better cross-browser date input appearance */
+        input[type="date"] {
+            -webkit-appearance: none;
+            -moz-appearance: textfield;
+        }
+        
+        input[type="date"]::-webkit-inner-spin-button,
+        input[type="date"]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
         }
 
         /* Professional Button Styling */
@@ -352,9 +389,59 @@
         }
 
         input[type="time"]::-webkit-calendar-picker-indicator {
-            filter: invert(1);
+            filter: invert(0.4) sepia(1) saturate(3) hue-rotate(25deg) brightness(1.2);
             cursor: pointer;
+            opacity: 1 !important;
+            width: 24px;
+            height: 24px;
+            position: relative;
+            z-index: 1000;
+            background-color: transparent;
+            margin-right: 8px;
+        }
+        
+        /* Fallback: Add custom clock icon */
+        .form-group input[type="time"] {
+            background-image: url('data:image/svg+xml;charset=UTF-8,<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="%23A0522D" viewBox="0 0 16 16"><path d="M8 3.5a.5.5 0 0 0-1 0V9a.5.5 0 0 0 .252.434l3.5 2a.5.5 0 0 0 .496-.868L8 8.71V3.5z"/><path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm7-8A7 7 0 1 1 1 8a7 7 0 0 1 14 0z"/></svg>');
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            background-size: 20px 20px;
+            padding-right: 40px;
+        }
+        
+        /* Modal specific time input styling */
+        .modal input[type="time"]::-webkit-calendar-picker-indicator {
+            filter: invert(0.4) sepia(1) saturate(3) hue-rotate(25deg) brightness(1.2);
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+            opacity: 1 !important;
+            z-index: 1001;
+        }
+        
+        .modal .form-group input[type="time"] {
+            background-image: url('data:image/svg+xml;charset=UTF-8,<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="%23A0522D" viewBox="0 0 16 16"><path d="M8 3.5a.5.5 0 0 0-1 0V9a.5.5 0 0 0 .252.434l3.5 2a.5.5 0 0 0 .496-.868L8 8.71V3.5z"/><path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm7-8A7 7 0 1 1 1 8a7 7 0 0 1 14 0z"/></svg>');
+            position: relative;
+        }
+        
+        /* Firefox time input support */
+        input[type="time"]::-moz-calendar-picker-indicator {
             opacity: 1;
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+        }
+        
+        /* Cross-browser time input appearance */
+        input[type="time"] {
+            -webkit-appearance: none;
+            -moz-appearance: textfield;
+        }
+        
+        input[type="time"]::-webkit-inner-spin-button,
+        input[type="time"]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
         }
 
         option {
@@ -912,28 +999,360 @@
             border: 1px solid rgba(139, 69, 19, 0.3);
         }
         
+        /* Mobile entries container - hidden by default, shown on mobile */
+        .mobile-entries-container {
+            display: none;
+        }
+        
         @media (max-width: 768px) {
+            /* Hide table and show mobile cards on mobile */
+            .table-container {
+                display: none;
+            }
+            
+            .mobile-entries-container {
+                display: block;
+            }
+            
+            body {
+                padding: 10px;
+            }
+            
             .container {
                 padding: 15px;
-                margin: 10px;
+                margin: 0;
+                border-radius: 12px;
             }
             
             .controls {
                 grid-template-columns: 1fr;
-            }
-            
-            h1 {
-                font-size: 2rem;
-                flex-direction: column;
                 gap: 15px;
             }
             
+            h1 {
+                font-size: 1.8rem;
+                flex-direction: column;
+                gap: 15px;
+                text-align: center;
+            }
+            
             h1 img {
-                height: 60px;
-                width: 60px;
+                height: 50px;
+                width: 50px;
             }
             
             #fishingLocationMap {
                 height: 250px;
+            }
+            
+            /* Mobile-friendly forms */
+            .form-row {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .form-group {
+                margin-bottom: 20px;
+            }
+            
+            .form-group input,
+            .form-group select,
+            .form-group textarea {
+                padding: 12px;
+                font-size: 16px; /* Prevents zoom on iOS */
+                border-radius: 8px;
+            }
+            
+            /* Mobile navigation */
+            .hamburger-menu {
+                padding: 12px;
+            }
+            
+            .nav-menu {
+                padding: 10px;
+                gap: 10px;
+            }
+            
+            .nav-menu button {
+                padding: 12px 16px;
+                font-size: 14px;
+            }
+            
+            /* Mobile modals */
+            .modal-content {
+                margin: 20px 10px;
+                max-height: calc(100vh - 40px);
+                overflow-y: auto;
+            }
+            
+            /* Hide table on mobile, show card layout instead */
+            .entry-table {
+                display: none;
+            }
+            
+            .mobile-entries-container {
+                display: block;
+            }
+            
+            .mobile-entry-card {
+                background: rgba(255, 255, 255, 0.95);
+                border: 2px solid rgba(139, 69, 19, 0.3);
+                border-radius: 12px;
+                padding: 20px;
+                margin-bottom: 20px;
+                box-shadow: 0 6px 16px rgba(44, 62, 45, 0.15);
+                font-size: 16px;
+                line-height: 1.5;
+            }
+            
+            .card-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 16px;
+                padding-bottom: 12px;
+                border-bottom: 2px solid rgba(139, 69, 19, 0.2);
+            }
+            
+            .card-header h3 {
+                margin: 0;
+                color: #2F4F2F;
+                font-size: 18px;
+                font-weight: 600;
+            }
+            
+            .card-header .date {
+                color: #666;
+                font-size: 14px;
+                font-weight: 500;
+            }
+            
+            .card-body {
+                display: flex;
+                flex-direction: column;
+                gap: 16px;
+            }
+            
+            .card-section {
+                background: rgba(139, 69, 19, 0.05);
+                padding: 12px;
+                border-radius: 8px;
+                border-left: 4px solid rgba(139, 69, 19, 0.3);
+            }
+            
+            .card-row {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 8px;
+            }
+            
+            .card-row:last-child {
+                margin-bottom: 0;
+            }
+            
+            .card-row .label {
+                font-weight: 600;
+                color: #2F4F2F;
+                font-size: 14px;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+            }
+            
+            .card-row .value {
+                font-weight: 500;
+                color: #333;
+                font-size: 15px;
+                text-align: right;
+                flex: 1;
+                margin-left: 12px;
+            }
+            
+            .notes {
+                margin-top: 8px;
+            }
+            
+            .notes .label {
+                display: block;
+                margin-bottom: 8px;
+            }
+            
+            .notes p {
+                margin: 0;
+                padding: 12px;
+                background: rgba(255, 255, 255, 0.8);
+                border-radius: 6px;
+                font-style: italic;
+                color: #555;
+                line-height: 1.4;
+            }
+            
+            .card-actions {
+                display: flex;
+                justify-content: center;
+                gap: 12px;
+                margin-top: 16px;
+                padding-top: 16px;
+                border-top: 1px solid rgba(139, 69, 19, 0.2);
+            }
+            
+            .card-actions .btn {
+                flex: 1;
+                padding: 12px 16px;
+                font-size: 14px;
+                font-weight: 600;
+                border-radius: 8px;
+                min-height: 44px;
+            }
+            
+            .mobile-entry-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 12px;
+                border-bottom: 1px solid rgba(139, 69, 19, 0.2);
+                padding-bottom: 8px;
+            }
+            
+            .mobile-entry-date {
+                font-weight: bold;
+                color: #2F4F2F;
+                font-size: 16px;
+            }
+            
+            .mobile-entry-actions {
+                display: flex;
+                gap: 8px;
+            }
+            
+            .mobile-entry-actions button {
+                padding: 6px 12px;
+                font-size: 12px;
+                min-height: 32px;
+            }
+            
+            .mobile-entry-details {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 12px;
+                margin-bottom: 12px;
+            }
+            
+            .mobile-entry-detail {
+                display: flex;
+                flex-direction: column;
+            }
+            
+            .mobile-entry-label {
+                font-size: 12px;
+                color: #666;
+                text-transform: uppercase;
+                font-weight: 500;
+                margin-bottom: 2px;
+            }
+            
+            .mobile-entry-value {
+                font-size: 14px;
+                color: #2C3E2D;
+                font-weight: 500;
+            }
+            
+            .mobile-entry-notes {
+                grid-column: 1 / -1;
+                margin-top: 8px;
+            }
+            
+            .mobile-entry-notes .mobile-entry-value {
+                font-size: 13px;
+                line-height: 1.4;
+                max-height: 60px;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+            
+            /* Mobile license cards */
+            .license-card {
+                margin-bottom: 15px;
+            }
+            
+            .license-document-preview {
+                max-width: 80px;
+                max-height: 60px;
+            }
+            
+            /* Mobile buttons */
+            .btn {
+                padding: 12px 20px;
+                font-size: 14px;
+                min-height: 44px; /* iOS touch target */
+            }
+            
+            /* Mobile river flow cards */
+            .river-card {
+                margin-bottom: 15px;
+            }
+        }
+        
+        /* Small mobile devices */
+        @media (max-width: 480px) {
+            h1 {
+                font-size: 1.5rem;
+            }
+            
+            .container {
+                padding: 10px;
+            }
+            
+            .form-group input,
+            .form-group select,
+            .form-group textarea {
+                padding: 10px;
+            }
+            
+            .btn {
+                width: 100%;
+                margin-bottom: 10px;
+            }
+            
+            .entry-table {
+                font-size: 12px;
+            }
+            
+            .modal-content {
+                margin: 10px 5px;
+            }
+        }
+        
+        /* Touch improvements for all mobile devices */
+        @media (hover: none) and (pointer: coarse) {
+            /* Larger touch targets */
+            .btn, button, input[type="button"], input[type="submit"] {
+                min-height: 44px;
+                min-width: 44px;
+            }
+            
+            /* Remove hover effects on touch devices */
+            .btn:hover,
+            button:hover {
+                transform: none;
+                box-shadow: 0 4px 12px rgba(139, 69, 19, 0.3);
+            }
+            
+            /* Improve form controls for touch */
+            select, input, textarea {
+                -webkit-appearance: none;
+                border-radius: 8px;
+            }
+            
+            /* Better license card touch interaction */
+            .license-card {
+                cursor: pointer;
+                -webkit-tap-highlight-color: rgba(139, 69, 19, 0.1);
+            }
+            
+            /* Improve table scrolling on mobile */
+            .entry-table-container {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
             }
         }

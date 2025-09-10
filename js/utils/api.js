@@ -248,6 +248,22 @@ async function saveFishingEntry(entryData) {
     try {
         console.log('saveFishingEntry called with:', entryData);
         
+        // Fetch and cache flow data if site number and date are available
+        let cachedFlowData = null;
+        if (entryData.siteNumber && entryData.date) {
+            console.log('Fetching flow data for caching...');
+            try {
+                const flowData = await getHourlyFlowData(entryData.siteNumber, entryData.date);
+                if (flowData && flowData.length > 0) {
+                    cachedFlowData = JSON.stringify(flowData);
+                    console.log('Successfully cached flow data:', flowData.length, 'data points');
+                }
+            } catch (error) {
+                console.warn('Failed to cache flow data:', error.message);
+                // Continue without cached data - it will fetch on demand
+            }
+        }
+
         const data = {
             date: entryData.date,
             start_time: entryData.startTime,
@@ -269,7 +285,8 @@ async function saveFishingEntry(entryData) {
             moon_phase: entryData.moonPhase,
             notes: entryData.notes,
             flies_used: entryData.fliesUsed,
-            photo_data: entryData.photoData
+            photo_data: entryData.photoData,
+            cached_flow_data: cachedFlowData
         };
 
         console.log('Prepared data for API:', data);

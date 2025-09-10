@@ -168,6 +168,27 @@ function initializeDatabase() {
                     });
                 }
             });
+            
+            // Check and add cached_flow_data column
+            db.get("PRAGMA table_info(fishing_entries)", (err, result) => {
+                if (err) return;
+                
+                db.all("PRAGMA table_info(fishing_entries)", (err, columns) => {
+                    if (err) return;
+                    
+                    const hasCachedFlowData = columns.some(col => col.name === 'cached_flow_data');
+                    if (!hasCachedFlowData) {
+                        console.log('Adding cached_flow_data column to fishing_entries table...');
+                        db.run("ALTER TABLE fishing_entries ADD COLUMN cached_flow_data TEXT", (err) => {
+                            if (err) {
+                                console.error('Error adding cached_flow_data to fishing_entries:', err);
+                            } else {
+                                console.log('Successfully added cached_flow_data column to fishing_entries');
+                            }
+                        });
+                    }
+                });
+            });
         } else {
             // Create new table with user_id
             db.run(`CREATE TABLE fishing_entries (
@@ -194,6 +215,7 @@ function initializeDatabase() {
                 notes TEXT,
                 flies_used TEXT,
                 photo_path TEXT,
+                cached_flow_data TEXT,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (user_id) REFERENCES users (id)
             )`);
@@ -234,19 +256,43 @@ function initializeDatabase() {
     });
 
     // User profile table (updated with user_id)
-    db.run(`CREATE TABLE IF NOT EXISTS user_profile (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER NOT NULL UNIQUE,
-        first_name TEXT,
-        last_name TEXT,
-        address TEXT,
-        phone TEXT,
-        email TEXT,
-        photo_path TEXT,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (user_id) REFERENCES users (id)
-    )`);
+    db.get("SELECT sql FROM sqlite_master WHERE type='table' AND name='user_profile'", (err, row) => {
+        if (err) return;
+        
+        if (!row) {
+            // Create new table
+            db.run(`CREATE TABLE user_profile (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL UNIQUE,
+                first_name TEXT,
+                last_name TEXT,
+                address TEXT,
+                phone TEXT,
+                email TEXT,
+                photo_path TEXT,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users (id)
+            )`);
+        } else {
+            // Check if user_id column exists
+            db.all("PRAGMA table_info(user_profile)", (err, columns) => {
+                if (err) return;
+                
+                const hasUserId = columns.some(col => col.name === 'user_id');
+                if (!hasUserId) {
+                    console.log('Adding user_id column to user_profile table...');
+                    db.run("ALTER TABLE user_profile ADD COLUMN user_id INTEGER", (err) => {
+                        if (err) {
+                            console.error('Error adding user_id to user_profile:', err);
+                        } else {
+                            console.log('Successfully added user_id column to user_profile');
+                        }
+                    });
+                }
+            });
+        }
+    });
 
     // Similar migration for rivers table
     db.get("SELECT sql FROM sqlite_master WHERE type='table' AND name='rivers'", (err, row) => {
@@ -360,7 +406,6 @@ function createDefaultAdmin() {
 // Authentication Routes
 app.post('/api/auth/signup', async (req, res) => {
     const { username, email, password, firstName, lastName, state } = req.body;
-    console.log('📝 Signup attempt:', { username, email, firstName, lastName, state });
 
     if (!username || !email || !password) {
         return res.status(400).json({ error: 'Username, email, and password are required' });
@@ -370,18 +415,14 @@ app.post('/api/auth/signup', async (req, res) => {
         // Check if user already exists
         db.get('SELECT id FROM users WHERE username = ? OR email = ?', [username, email], async (err, row) => {
             if (err) {
-                console.error('❌ Signup database error:', err);
                 res.status(500).json({ error: err.message });
                 return;
             }
 
             if (row) {
-                console.log('❌ User already exists:', username, email);
                 res.status(400).json({ error: 'Username or email already exists' });
                 return;
             }
-
-            console.log('✅ User check passed, creating new user...');
 
             // Hash password
             const passwordHash = await bcrypt.hash(password, 10);
@@ -392,10 +433,8 @@ app.post('/api/auth/signup', async (req, res) => {
 
             db.run(sql, [username, email, passwordHash, firstName || null, lastName || null, state || null], function(err) {
                 if (err) {
-                    console.error('❌ User creation failed:', err);
                     res.status(500).json({ error: err.message });
                 } else {
-                    console.log('✅ User created successfully:', { id: this.lastID, username, email });
                     req.session.userId = this.lastID;
                     req.session.username = username;
                     res.json({ 
@@ -414,7 +453,6 @@ app.post('/api/auth/signup', async (req, res) => {
 
 app.post('/api/auth/login', (req, res) => {
     const { username, password } = req.body;
-    console.log('🔐 Login attempt for:', username);
 
     if (!username || !password) {
         return res.status(400).json({ error: 'Username and password are required' });
@@ -423,30 +461,22 @@ app.post('/api/auth/login', (req, res) => {
     const sql = 'SELECT * FROM users WHERE username = ? OR email = ?';
     db.get(sql, [username, username], async (err, user) => {
         if (err) {
-            console.error('❌ Database error:', err);
             res.status(500).json({ error: err.message });
             return;
         }
 
         if (!user) {
-            console.log('❌ User not found:', username);
             res.status(401).json({ error: 'Invalid credentials' });
             return;
         }
 
-        console.log('👤 User found:', user.username, 'Hash exists:', !!user.password_hash);
-
         try {
             const validPassword = await bcrypt.compare(password, user.password_hash);
-            console.log('🔑 Password comparison result:', validPassword);
             
             if (!validPassword) {
-                console.log('❌ Invalid password for user:', username);
                 res.status(401).json({ error: 'Invalid credentials' });
                 return;
             }
-
-            console.log('✅ Login successful for:', username);
 
             // Update last login
             db.run('UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = ?', [user.id]);
@@ -530,7 +560,7 @@ app.post('/api/fishing-entries', requireAuth, (req, res) => {
         date, start_time, end_time, angler, species, length, weight,
         city_state, latitude, longitude, site_number, river_name,
         water_flow, weather_temp, barometric_pressure, wind_speed, wind_direction,
-        moon_phase, notes, flies_used, photo_data
+        moon_phase, notes, flies_used, photo_data, cached_flow_data
     } = req.body;
 
     let photo_path = null;
@@ -545,14 +575,14 @@ app.post('/api/fishing-entries', requireAuth, (req, res) => {
         user_id, date, start_time, end_time, angler, species, length, weight,
         city_state, latitude, longitude, site_number, river_name,
         water_flow, weather_temp, barometric_pressure, wind_speed, wind_direction,
-        moon_phase, notes, flies_used, photo_path
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+        moon_phase, notes, flies_used, photo_path, cached_flow_data
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
     db.run(sql, [
         req.session.userId, date, start_time, end_time, angler, species, length, weight,
         city_state, latitude, longitude, site_number, river_name,
         water_flow, weather_temp, barometric_pressure, wind_speed, wind_direction,
-        moon_phase, notes, flies_used, photo_path
+        moon_phase, notes, flies_used, photo_path, cached_flow_data
     ], function(err) {
         if (err) {
             res.status(500).json({ error: err.message });
@@ -661,17 +691,47 @@ app.delete('/api/licenses/:id', requireAuth, (req, res) => {
 
 // User Profile
 app.get('/api/profile', requireAuth, (req, res) => {
-    db.get('SELECT * FROM user_profile WHERE user_id = ?', [req.session.userId], (err, profileRow) => {
+    // First check if user_profile table has user_id column
+    db.all("PRAGMA table_info(user_profile)", (err, columns) => {
         if (err) {
             res.status(500).json({ error: err.message });
             return;
         }
+        
+        const hasUserId = columns.some(col => col.name === 'user_id');
+        
+        if (hasUserId) {
+            // Table has user_id column, use normal query
+            db.get('SELECT * FROM user_profile WHERE user_id = ?', [req.session.userId], (err, profileRow) => {
+                if (err) {
+                    res.status(500).json({ error: err.message });
+                    return;
+                }
 
-        if (profileRow) {
-            // Profile exists, return it
-            res.json(profileRow);
+                if (profileRow) {
+                    // Profile exists, return it
+                    res.json(profileRow);
+                } else {
+                    // No profile exists, get user account data to pre-populate
+                    db.get('SELECT first_name, last_name, email FROM users WHERE id = ?', [req.session.userId], (err, userRow) => {
+                        if (err) {
+                            res.status(500).json({ error: err.message });
+                        } else {
+                            // Return user account data for profile pre-population
+                            res.json({
+                                first_name: userRow ? userRow.first_name : '',
+                                last_name: userRow ? userRow.last_name : '',
+                                email: userRow ? userRow.email : '',
+                                address: '',
+                                phone: '',
+                                photo_path: null
+                            });
+                        }
+                    });
+                }
+            });
         } else {
-            // No profile exists, get user account data to pre-populate
+            // Table doesn't have user_id column yet, just return user account data
             db.get('SELECT first_name, last_name, email FROM users WHERE id = ?', [req.session.userId], (err, userRow) => {
                 if (err) {
                     res.status(500).json({ error: err.message });
@@ -1124,17 +1184,6 @@ app.post('/api/admin/users/:id/reset-password', requireAdmin, async (req, res) =
 
 // Serve static files from public directory
 app.use(express.static(path.join(__dirname, 'public')));
-
-// Debug endpoint to list all users (remove after testing)
-app.get('/debug/users', (req, res) => {
-    db.all('SELECT id, username, email, first_name, last_name, created_at FROM users', (err, rows) => {
-        if (err) {
-            res.status(500).json({ error: err.message });
-        } else {
-            res.json({ users: rows, count: rows.length });
-        }
-    });
-});
 
 // Serve the main HTML file
 app.get('/', (req, res) => {
