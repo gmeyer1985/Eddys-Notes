@@ -360,6 +360,7 @@ function createDefaultAdmin() {
 // Authentication Routes
 app.post('/api/auth/signup', async (req, res) => {
     const { username, email, password, firstName, lastName, state } = req.body;
+    console.log('📝 Signup attempt:', { username, email, firstName, lastName, state });
 
     if (!username || !email || !password) {
         return res.status(400).json({ error: 'Username, email, and password are required' });
@@ -369,14 +370,18 @@ app.post('/api/auth/signup', async (req, res) => {
         // Check if user already exists
         db.get('SELECT id FROM users WHERE username = ? OR email = ?', [username, email], async (err, row) => {
             if (err) {
+                console.error('❌ Signup database error:', err);
                 res.status(500).json({ error: err.message });
                 return;
             }
 
             if (row) {
+                console.log('❌ User already exists:', username, email);
                 res.status(400).json({ error: 'Username or email already exists' });
                 return;
             }
+
+            console.log('✅ User check passed, creating new user...');
 
             // Hash password
             const passwordHash = await bcrypt.hash(password, 10);
@@ -387,8 +392,10 @@ app.post('/api/auth/signup', async (req, res) => {
 
             db.run(sql, [username, email, passwordHash, firstName || null, lastName || null, state || null], function(err) {
                 if (err) {
+                    console.error('❌ User creation failed:', err);
                     res.status(500).json({ error: err.message });
                 } else {
+                    console.log('✅ User created successfully:', { id: this.lastID, username, email });
                     req.session.userId = this.lastID;
                     req.session.username = username;
                     res.json({ 
@@ -1117,6 +1124,17 @@ app.post('/api/admin/users/:id/reset-password', requireAdmin, async (req, res) =
 
 // Serve static files from public directory
 app.use(express.static(path.join(__dirname, 'public')));
+
+// Debug endpoint to list all users (remove after testing)
+app.get('/debug/users', (req, res) => {
+    db.all('SELECT id, username, email, first_name, last_name, created_at FROM users', (err, rows) => {
+        if (err) {
+            res.status(500).json({ error: err.message });
+        } else {
+            res.json({ users: rows, count: rows.length });
+        }
+    });
+});
 
 // Serve the main HTML file
 app.get('/', (req, res) => {
