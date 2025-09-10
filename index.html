@@ -26,60 +26,81 @@
 <body>
     <!-- Login Overlay - shown by default until user logs in -->
     <div id="loginOverlay" class="login-overlay">
-        <div class="login-container">
-            <div class="login-header">
-                <img src="art/eddysNotesLogo.png" alt="Eddy's Notes Logo" class="login-logo">
-                <h1>Welcome to Eddy's Notes</h1>
-                <p>Your Personal Fishing Log</p>
+        <div class="login-split-container">
+            <!-- Left Side - Artwork Display -->
+            <div class="login-artwork-side">
+                <div class="artwork-container">
+                    <img src="art/loginBG.png" alt="Fishing Artwork" class="login-artwork">
+                    <div class="artwork-overlay">
+                        <div class="brand-section">
+                            <img src="art/eddysNotesLogo.png" alt="Eddy's Notes Logo" class="brand-logo">
+                            <h1 class="brand-title">Eddy's Notes</h1>
+                            <p class="brand-subtitle">Your Personal Fishing Chronicle</p>
+                        </div>
+                        <div class="artwork-info">
+                            <p class="artwork-description">Track your catches, manage licenses, and record every memorable moment on the water.</p>
+                        </div>
+                    </div>
+                </div>
             </div>
             
-            <div class="login-form-container">
-                <div class="login-tabs">
-                    <button class="tab-button active" onclick="showLoginTab()">Login</button>
-                    <button class="tab-button" onclick="showSignupTab()">Sign Up</button>
+            <!-- Right Side - Login Forms -->
+            <div class="login-form-side">
+                <div class="login-container">
+                    <div class="login-header">
+                        <h2>Welcome Back</h2>
+                        <p>Sign in to access your fishing log</p>
+                    </div>
+                    
+                    <div class="login-form-container">
+                        <div class="login-tabs">
+                            <button class="tab-button active" onclick="showLoginTab()">Login</button>
+                            <button class="tab-button" onclick="showSignupTab()">Sign Up</button>
+                        </div>
+                        
+                        <!-- Login Form -->
+                        <div id="loginForm" class="auth-form active">
+                            <form id="loginFormElement">
+                                <div class="form-group">
+                                    <input type="text" id="loginUsername" placeholder="Username or Email" required>
+                                </div>
+                                <div class="form-group">
+                                    <input type="password" id="loginPassword" placeholder="Password" required>
+                                </div>
+                                <button type="submit" class="auth-button">Login</button>
+                            </form>
+                        </div>
+                        
+                        <!-- Signup Form -->
+                        <div id="signupForm" class="auth-form">
+                            <form id="signupFormElement">
+                                <div class="form-group">
+                                    <input type="text" id="signupUsername" placeholder="Username" required>
+                                </div>
+                                <div class="form-group">
+                                    <input type="email" id="signupEmail" placeholder="Email" required>
+                                </div>
+                                <div class="form-group">
+                                    <input type="password" id="signupPassword" placeholder="Password" required>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <input type="text" id="signupFirstName" placeholder="First Name">
+                                    </div>
+                                    <div class="form-group">
+                                        <input type="text" id="signupLastName" placeholder="Last Name">
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <input type="text" id="signupState" placeholder="State (e.g. MN)">
+                                </div>
+                                <button type="submit" class="auth-button">Create Account</button>
+                            </form>
+                        </div>
+                        
+                        <div id="authMessage" class="auth-message"></div>
+                    </div>
                 </div>
-                
-                <!-- Login Form -->
-                <div id="loginForm" class="auth-form active">
-                    <form id="loginFormElement">
-                        <div class="form-group">
-                            <input type="text" id="loginUsername" placeholder="Username or Email" required>
-                        </div>
-                        <div class="form-group">
-                            <input type="password" id="loginPassword" placeholder="Password" required>
-                        </div>
-                        <button type="submit" class="auth-button">Login</button>
-                    </form>
-                </div>
-                
-                <!-- Signup Form -->
-                <div id="signupForm" class="auth-form">
-                    <form id="signupFormElement">
-                        <div class="form-group">
-                            <input type="text" id="signupUsername" placeholder="Username" required>
-                        </div>
-                        <div class="form-group">
-                            <input type="email" id="signupEmail" placeholder="Email" required>
-                        </div>
-                        <div class="form-group">
-                            <input type="password" id="signupPassword" placeholder="Password" required>
-                        </div>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <input type="text" id="signupFirstName" placeholder="First Name">
-                            </div>
-                            <div class="form-group">
-                                <input type="text" id="signupLastName" placeholder="Last Name">
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <input type="text" id="signupState" placeholder="State (e.g. MN)">
-                        </div>
-                        <button type="submit" class="auth-button">Create Account</button>
-                    </form>
-                </div>
-                
-                <div id="authMessage" class="auth-message"></div>
             </div>
         </div>
     </div>

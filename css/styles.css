@@ -335,51 +335,127 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.6)), url('art/loginBG.png');
-            background-size: cover;
-            background-position: center;
+            background: #1a1a1a;
             display: flex;
-            justify-content: center;
-            align-items: center;
             z-index: 10000;
-            backdrop-filter: blur(2px);
+            overflow: hidden;
+        }
+
+        .login-split-container {
+            display: flex;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Left Side - Artwork Display */
+        .login-artwork-side {
+            flex: 1.2;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .artwork-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        .login-artwork {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: center;
+        }
+
+        .artwork-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(0, 0, 0, 0.4) 0%, rgba(0, 0, 0, 0.2) 50%, rgba(0, 0, 0, 0.6) 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 60px 50px;
+            color: white;
+        }
+
+        .brand-section {
+            text-align: left;
+        }
+
+        .brand-logo {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            border: 4px solid rgba(255, 255, 255, 0.9);
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .brand-title {
+            font-family: 'Bebas Neue', cursive;
+            font-size: 3.5rem;
+            margin: 0 0 15px 0;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            color: white;
+        }
+
+        .brand-subtitle {
+            font-size: 1.4rem;
+            margin: 0 0 30px 0;
+            color: rgba(255, 255, 255, 0.9);
+            font-style: italic;
+            font-weight: 300;
+        }
+
+        .artwork-info {
+            margin-top: auto;
+        }
+
+        .artwork-description {
+            font-size: 1.1rem;
+            line-height: 1.6;
+            color: rgba(255, 255, 255, 0.85);
+            margin: 0;
+            max-width: 400px;
+        }
+
+        /* Right Side - Login Forms */
+        .login-form-side {
+            flex: 1;
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
         }
 
         .login-container {
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 20px;
-            padding: 40px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-            width: 90%;
-            max-width: 450px;
+            width: 100%;
+            max-width: 400px;
             text-align: center;
-            border: 2px solid rgba(139, 69, 19, 0.3);
         }
 
         .login-header {
-            margin-bottom: 30px;
+            margin-bottom: 40px;
         }
 
-        .login-logo {
-            width: 80px;
-            height: 80px;
-            margin-bottom: 20px;
-            border-radius: 50%;
-            border: 3px solid rgba(139, 69, 19, 0.3);
-        }
-
-        .login-header h1 {
+        .login-header h2 {
             color: #2F4F2F;
-            font-size: 2.2rem;
-            margin: 0 0 10px 0;
+            font-size: 2.5rem;
+            margin: 0 0 15px 0;
             font-family: 'Bebas Neue', cursive;
+            font-weight: 400;
         }
 
         .login-header p {
             color: #666;
             font-size: 1.1rem;
             margin: 0;
-            font-style: italic;
+            font-weight: 400;
         }
 
         .login-tabs {
@@ -491,25 +567,137 @@
         }
 
         /* Mobile responsiveness for login */
+        @media (max-width: 1024px) {
+            .login-split-container {
+                flex-direction: column;
+            }
+            
+            .login-artwork-side {
+                flex: none;
+                height: 40vh;
+                min-height: 300px;
+            }
+            
+            .artwork-overlay {
+                padding: 30px;
+                justify-content: center;
+                text-align: center;
+            }
+            
+            .brand-section {
+                text-align: center;
+            }
+            
+            .brand-logo {
+                width: 80px;
+                height: 80px;
+                margin-bottom: 20px;
+            }
+            
+            .brand-title {
+                font-size: 2.5rem;
+            }
+            
+            .brand-subtitle {
+                font-size: 1.1rem;
+                margin-bottom: 15px;
+            }
+            
+            .artwork-info {
+                margin-top: 0;
+            }
+            
+            .artwork-description {
+                font-size: 0.95rem;
+                max-width: 300px;
+                margin: 0 auto;
+            }
+            
+            .login-form-side {
+                flex: none;
+                height: 60vh;
+                padding: 20px;
+            }
+            
+            .login-header h2 {
+                font-size: 2rem;
+            }
+        }
+
         @media (max-width: 768px) {
-            .login-container {
-                width: 95%;
-                padding: 30px 20px;
-                margin: 20px;
+            .login-artwork-side {
+                height: 35vh;
+                min-height: 250px;
             }
-
-            .login-header h1 {
-                font-size: 1.8rem;
+            
+            .artwork-overlay {
+                padding: 20px;
             }
-
-            .login-logo {
+            
+            .brand-logo {
                 width: 60px;
                 height: 60px;
+                margin-bottom: 15px;
             }
-
+            
+            .brand-title {
+                font-size: 2rem;
+            }
+            
+            .brand-subtitle {
+                font-size: 1rem;
+                margin-bottom: 10px;
+            }
+            
+            .artwork-description {
+                font-size: 0.9rem;
+                line-height: 1.4;
+            }
+            
+            .login-form-side {
+                height: 65vh;
+                padding: 15px;
+            }
+            
+            .login-header {
+                margin-bottom: 30px;
+            }
+            
+            .login-header h2 {
+                font-size: 1.8rem;
+            }
+            
             .auth-form .form-row {
                 flex-direction: column;
                 gap: 0;
+            }
+            
+            .login-form-container {
+                margin: 0;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .login-artwork-side {
+                height: 30vh;
+                min-height: 200px;
+            }
+            
+            .login-form-side {
+                height: 70vh;
+                padding: 10px;
+            }
+            
+            .brand-title {
+                font-size: 1.6rem;
+            }
+            
+            .login-header h2 {
+                font-size: 1.5rem;
+            }
+            
+            .auth-form input {
+                padding: 12px;
             }
         }
 
