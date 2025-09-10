@@ -112,12 +112,28 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage: storage, limits: { fileSize: 10 * 1024 * 1024 } });
 
-// Initialize SQLite database
-const db = new sqlite3.Database('fishing_log.db', (err) => {
+// Initialize SQLite database - use persistent volume in production
+const isProduction = process.env.NODE_ENV === 'production';
+const dbPath = isProduction 
+    ? path.join('/app/data', 'fishing_log.db')  // Persistent volume path
+    : 'fishing_log.db';                         // Local development path
+
+console.log('Database path:', dbPath);
+
+// Ensure the data directory exists in production
+if (isProduction) {
+    const dataDir = path.dirname(dbPath);
+    if (!fs.existsSync(dataDir)) {
+        console.log('Creating data directory:', dataDir);
+        fs.mkdirSync(dataDir, { recursive: true });
+    }
+}
+
+const db = new sqlite3.Database(dbPath, (err) => {
     if (err) {
         console.error('Error opening database:', err);
     } else {
-        console.log('Connected to SQLite database');
+        console.log('Connected to SQLite database at:', dbPath);
         initializeDatabase();
     }
 });
