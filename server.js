@@ -50,10 +50,10 @@ const sessionConfig = {
     resave: false,
     saveUninitialized: false,
     cookie: { 
-        secure: NODE_ENV === 'production', // Use secure cookies in production
+        secure: false, // Temporarily disable secure cookies to troubleshoot
         maxAge: 24 * 60 * 60 * 1000, // 24 hours
         sameSite: 'lax', // Use lax for compatibility
-        httpOnly: true // Security: prevent XSS
+        httpOnly: false // Temporarily disable httpOnly to troubleshoot
     }
 };
 
@@ -547,11 +547,20 @@ app.post('/api/auth/signup', async (req, res) => {
                         req.session.username = username;
                         console.log('DEBUG: Set session - userId:', req.session.userId, 'username:', req.session.username);
                         console.log('DEBUG: Session ID after signup:', req.sessionID);
-                        res.json({ 
-                            id: this.lastID, 
-                            username: username, 
-                            email: email,
-                            message: 'Account created successfully!' 
+                        
+                        // Force session save and wait for it
+                        req.session.save((saveErr) => {
+                            if (saveErr) {
+                                console.error('DEBUG: Session save error:', saveErr);
+                                return res.status(500).json({ error: 'Failed to save session' });
+                            }
+                            console.log('DEBUG: Session saved successfully');
+                            res.json({ 
+                                id: this.lastID, 
+                                username: username, 
+                                email: email,
+                                message: 'Account created successfully!' 
+                            });
                         });
                     });
                 });
