@@ -647,6 +647,43 @@ app.get('/api/debug/users', requireAdmin, (req, res) => {
     });
 });
 
+// Emergency endpoint to recreate lost user (admin only)
+app.post('/api/debug/recreate-user', requireAdmin, async (req, res) => {
+    const { username, email, password, firstName, lastName } = req.body;
+    
+    if (!username || !email || !password) {
+        return res.status(400).json({ error: 'Username, email, and password are required' });
+    }
+    
+    console.log('Admin recreating user:', { username, email, firstName, lastName });
+    
+    try {
+        const passwordHash = await bcrypt.hash(password, 10);
+        
+        db.run(
+            'INSERT INTO users (username, email, password_hash, first_name, last_name) VALUES (?, ?, ?, ?, ?)',
+            [username, email, passwordHash, firstName || null, lastName || null],
+            function(err) {
+                if (err) {
+                    console.error('Error recreating user:', err);
+                    res.status(500).json({ error: err.message });
+                } else {
+                    console.log('User recreated successfully with ID:', this.lastID);
+                    res.json({ 
+                        id: this.lastID, 
+                        username, 
+                        email, 
+                        message: 'User recreated successfully' 
+                    });
+                }
+            }
+        );
+    } catch (error) {
+        console.error('Error hashing password:', error);
+        res.status(500).json({ error: 'Failed to recreate user' });
+    }
+});
+
 app.post('/api/auth/login', (req, res) => {
     const { username, password } = req.body;
     console.log('Login attempt for username:', username);
