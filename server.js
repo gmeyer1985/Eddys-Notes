@@ -446,24 +446,22 @@ app.post('/api/auth/signup', async (req, res) => {
     try {
         console.log('Signup attempt - Username:', username, 'Email:', email);
         
-        // Use database serialization to prevent race conditions
-        db.serialize(() => {
-            // First, let's see all users with similar emails for debugging
-            console.log('DEBUG: Checking for similar emails to:', email);
-            db.all('SELECT id, username, email FROM users WHERE email LIKE ?', [`%${email.split('@')[1]}`], (debugErr, similarEmails) => {
-                if (!debugErr) {
-                    console.log('DEBUG: Found similar domain emails:', similarEmails);
-                }
-            });
-            
-            // Single query to check both username and email
+        // Use a proper transaction to prevent race conditions
+        db.run('BEGIN IMMEDIATE TRANSACTION', (beginErr) => {
+            if (beginErr) {
+                console.error('Error beginning transaction:', beginErr);
+                return res.status(500).json({ error: 'Database error occurred' });
+            }
+
+            // Single query to check both username and email within the transaction
             const checkQuery = 'SELECT id, username, email FROM users WHERE LOWER(username) = LOWER(?) OR LOWER(email) = LOWER(?)';
-            console.log('DEBUG: Running duplicate check query:', checkQuery);
+            console.log('DEBUG: Running duplicate check query in transaction:', checkQuery);
             console.log('DEBUG: Query parameters:', [username, email]);
             
             db.get(checkQuery, [username, email], async (err, existingUser) => {
                 if (err) {
                     console.error('Database error during user existence check:', err);
+                    db.run('ROLLBACK');
                     return res.status(500).json({ error: 'Database error occurred' });
                 }
 
@@ -471,8 +469,7 @@ app.post('/api/auth/signup', async (req, res) => {
 
                 if (existingUser) {
                     console.log('Duplicate found - Existing user:', existingUser);
-                    console.log('DEBUG: Comparing emails - existing:', existingUser.email, 'new:', email);
-                    console.log('DEBUG: Email match:', existingUser.email.toLowerCase() === email.toLowerCase());
+                    db.run('ROLLBACK');
                     
                     if (existingUser.email.toLowerCase() === email.toLowerCase()) {
                         return res.status(400).json({ 
@@ -487,10 +484,11 @@ app.post('/api/auth/signup', async (req, res) => {
 
                 console.log('No duplicates found, proceeding with user creation...');
 
-                // Hash password and create user in the same serialized transaction
+                // Hash password and create user within the transaction
                 bcrypt.hash(password, 10, (hashErr, passwordHash) => {
                     if (hashErr) {
                         console.error('Password hashing error:', hashErr);
+                        db.run('ROLLBACK');
                         return res.status(500).json({ error: 'Failed to process account creation. Please try again.' });
                     }
 
@@ -504,14 +502,7 @@ app.post('/api/auth/signup', async (req, res) => {
                     db.run(sql, [username, email, passwordHash, firstName || null, lastName || null, state || null], function(err) {
                         if (err) {
                             console.error('Database error during user creation:', err);
-                            
-                            // Let's check what users exist right after the error
-                            console.log('DEBUG: Checking users table after insert error...');
-                            db.all('SELECT id, username, email FROM users ORDER BY id DESC LIMIT 5', (checkErr, users) => {
-                                if (!checkErr) {
-                                    console.log('DEBUG: Current users in database:', users);
-                                }
-                            });
+                            db.run('ROLLBACK');
                             
                             // Handle specific SQLite constraint errors (fallback safety)
                             if (err.message.includes('UNIQUE constraint failed: users.email')) {
@@ -531,15 +522,23 @@ app.post('/api/auth/signup', async (req, res) => {
                             }
                         }
 
-                        console.log('DEBUG: User creation successful!');
-                        console.log('New user created successfully:', username, 'with ID:', this.lastID);
-                        req.session.userId = this.lastID;
-                        req.session.username = username;
-                        res.json({ 
-                            id: this.lastID, 
-                            username: username, 
-                            email: email,
-                            message: 'Account created successfully!' 
+                        // Commit the transaction on successful insert
+                        db.run('COMMIT', (commitErr) => {
+                            if (commitErr) {
+                                console.error('Error committing transaction:', commitErr);
+                                return res.status(500).json({ error: 'Failed to create account. Please try again.' });
+                            }
+
+                            console.log('DEBUG: User creation successful!');
+                            console.log('New user created successfully:', username, 'with ID:', this.lastID);
+                            req.session.userId = this.lastID;
+                            req.session.username = username;
+                            res.json({ 
+                                id: this.lastID, 
+                                username: username, 
+                                email: email,
+                                message: 'Account created successfully!' 
+                            });
                         });
                     });
                 });
