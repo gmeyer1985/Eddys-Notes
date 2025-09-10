@@ -633,6 +633,20 @@ app.get('/api/auth/session-test', (req, res) => {
     });
 });
 
+// Debug endpoint to check all users (admin only)
+app.get('/api/debug/users', requireAdmin, (req, res) => {
+    console.log('Debug: Fetching all users from database');
+    db.all('SELECT id, username, email, first_name, last_name, created_at, last_login FROM users ORDER BY created_at', (err, users) => {
+        if (err) {
+            console.error('Error fetching users:', err);
+            res.status(500).json({ error: err.message });
+        } else {
+            console.log('Debug: Found', users.length, 'users in database');
+            res.json(users);
+        }
+    });
+});
+
 app.post('/api/auth/login', (req, res) => {
     const { username, password } = req.body;
     console.log('Login attempt for username:', username);
