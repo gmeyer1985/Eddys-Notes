@@ -90,13 +90,14 @@ function setupEventListeners() {
     var loginFormElement = document.getElementById('loginFormElement');
     var signupFormElement = document.getElementById('signupFormElement');
     
-    if (loginFormElement) {
-        loginFormElement.addEventListener('submit', handleLogin);
-    }
+    // Temporarily disabled to let auth.js handle form submissions
+    // if (loginFormElement) {
+    //     loginFormElement.addEventListener('submit', handleLogin);
+    // }
     
-    if (signupFormElement) {
-        signupFormElement.addEventListener('submit', handleSignup);
-    }
+    // if (signupFormElement) {
+    //     signupFormElement.addEventListener('submit', handleSignup);
+    // }
 }
 
 // Initialize app data after authentication
