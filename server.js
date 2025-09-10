@@ -1231,6 +1231,20 @@ app.get('/api/rivers', requireAuth, (req, res) => {
     });
 });
 
+// Debug endpoint to see all river sites (admin only)
+app.get('/api/debug/rivers', requireAdmin, (req, res) => {
+    console.log('Fetching all river sites from database');
+    db.all('SELECT * FROM rivers ORDER BY user_id, river_name', (err, rows) => {
+        if (err) {
+            console.error('Error fetching rivers:', err);
+            res.status(500).json({ error: err.message });
+        } else {
+            console.log('Found', rows.length, 'river sites');
+            res.json(rows);
+        }
+    });
+});
+
 app.post('/api/rivers', requireAuth, (req, res) => {
     const { site_number, river_name, location, current_flow } = req.body;
 
