@@ -59,16 +59,31 @@ document.addEventListener('DOMContentLoaded', function() {
     // Login form handler
     document.getElementById('loginFormElement').addEventListener('submit', async function(e) {
         e.preventDefault();
+        e.stopImmediatePropagation(); // Stop other listeners from executing
+        console.log('Login form submitted!');
+        
+        // Check if already submitting to prevent double submissions
+        if (this.dataset.submitting === 'true') {
+            console.log('Already submitting login, ignoring duplicate event');
+            return;
+        }
+        this.dataset.submitting = 'true';
         
         const username = document.getElementById('loginUsername').value.trim();
         const password = document.getElementById('loginPassword').value;
+        console.log('Login attempt:', { username, passwordLength: password.length });
         
         if (!username || !password) {
+            console.log('Validation failed: missing username or password');
             showAuthMessage('Please enter both username and password');
+            this.dataset.submitting = 'false';
             return;
         }
         
+        console.log('Validation passed, making API request...');
+        
         try {
+            console.log('Making fetch request to /api/auth/login');
             const response = await fetch('/api/auth/login', {
                 method: 'POST',
                 headers: {
@@ -78,7 +93,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 body: JSON.stringify({ username, password })
             });
             
+            console.log('Response received:', response.status, response.statusText);
             const data = await response.json();
+            console.log('Response data:', data);
             
             if (response.ok) {
                 showAuthMessage('Login successful!', 'success');
@@ -95,13 +112,25 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         } catch (error) {
             console.error('Login error:', error);
+            console.error('Error details:', error.message, error.stack);
             showAuthMessage('Network error. Please try again.');
+        } finally {
+            // Reset submitting flag
+            this.dataset.submitting = 'false';
         }
     });
     
     // Signup form handler
     document.getElementById('signupFormElement').addEventListener('submit', async function(e) {
         e.preventDefault();
+        e.stopImmediatePropagation(); // Stop other listeners from executing
+        
+        // Check if already submitting to prevent double submissions
+        if (this.dataset.submitting === 'true') {
+            console.log('Already submitting signup, ignoring duplicate event');
+            return;
+        }
+        this.dataset.submitting = 'true';
         
         // Prevent double submission
         const submitButton = this.querySelector('button[type="submit"]');
@@ -189,6 +218,9 @@ document.addEventListener('DOMContentLoaded', function() {
             // Re-enable submit button
             submitButton.disabled = false;
             submitButton.textContent = 'Create Account';
+            
+            // Reset submitting flag
+            this.dataset.submitting = 'false';
         }
     });
 });
