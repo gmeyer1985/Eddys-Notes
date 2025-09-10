@@ -62,18 +62,15 @@ const sessionConfig = {
     resave: false,
     saveUninitialized: false,
     cookie: { 
-        secure: false, // Temporarily disable secure cookies to troubleshoot
+        secure: NODE_ENV === 'production', // Use secure cookies in production
         maxAge: 24 * 60 * 60 * 1000, // 24 hours
         sameSite: 'lax', // Use lax for compatibility
-        httpOnly: false, // Temporarily disable httpOnly to troubleshoot
+        httpOnly: true, // Security: prevent XSS
         path: '/' // Explicit path
     }
 };
 
-// Temporarily use MemoryStore to troubleshoot session issues
-console.log('Using MemoryStore for sessions (troubleshooting mode)');
-// Commented out Redis store temporarily
-/*
+// Use Redis store in production if available
 if (NODE_ENV === 'production' && RedisStore && redisClient) {
     sessionConfig.store = new RedisStore({
         client: redisClient,
@@ -83,7 +80,6 @@ if (NODE_ENV === 'production' && RedisStore && redisClient) {
 } else {
     console.log('Using MemoryStore for sessions (development mode)');
 }
-*/
 
 app.use(session(sessionConfig));
 
@@ -562,32 +558,19 @@ app.post('/api/auth/signup', async (req, res) => {
                         cleanupLock();
                         req.session.userId = this.lastID;
                         req.session.username = username;
-                        console.log('DEBUG: Set session - userId:', req.session.userId, 'username:', req.session.username);
-                        console.log('DEBUG: Session ID after signup:', req.sessionID);
                         
                         // Force session save and wait for it
-                        console.log('DEBUG: About to save session...');
                         req.session.save((saveErr) => {
                             if (saveErr) {
-                                console.error('DEBUG: Session save error:', saveErr);
-                                console.error('DEBUG: Session save error details:', JSON.stringify(saveErr, null, 2));
-                                // Still respond with success, but log the session issue
-                            } else {
-                                console.log('DEBUG: Session saved successfully');
+                                console.error('Session save error:', saveErr);
+                                return res.status(500).json({ error: 'Failed to save session' });
                             }
-                            
-                            console.log('DEBUG: Final session check - userId:', req.session.userId);
-                            
-                            // Add explicit cookie debugging
-                            res.setHeader('Set-Cookie-Debug', 'session-test=value; Path=/; SameSite=lax');
-                            console.log('DEBUG: Response headers will include session cookie');
                             
                             res.json({ 
                                 id: this.lastID, 
                                 username: username, 
                                 email: email,
-                                message: 'Account created successfully!',
-                                sessionId: req.sessionID // Add session ID to response for debugging
+                                message: 'Account created successfully!'
                             });
                         });
                     });
@@ -680,12 +663,6 @@ app.post('/api/auth/logout', (req, res) => {
 });
 
 app.get('/api/auth/user', (req, res) => {
-    console.log('DEBUG: /api/auth/user - Session ID:', req.sessionID);
-    console.log('DEBUG: /api/auth/user - Session data:', req.session);
-    console.log('DEBUG: /api/auth/user - User ID in session:', req.session.userId);
-    console.log('DEBUG: /api/auth/user - Cookies received:', req.headers.cookie);
-    console.log('DEBUG: /api/auth/user - All headers:', JSON.stringify(req.headers, null, 2));
-    
     if (!req.session.userId) {
         return res.status(401).json({ error: 'Not authenticated' });
     }
