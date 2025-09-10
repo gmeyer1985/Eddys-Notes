@@ -59,6 +59,14 @@ document.addEventListener('DOMContentLoaded', function() {
     // Login form handler
     document.getElementById('loginFormElement').addEventListener('submit', async function(e) {
         e.preventDefault();
+        e.stopImmediatePropagation(); // Stop other listeners from executing
+        
+        // Check if already submitting to prevent double submissions
+        if (this.dataset.submitting === 'true') {
+            console.log('Already submitting login, ignoring duplicate event');
+            return;
+        }
+        this.dataset.submitting = 'true';
         
         const username = document.getElementById('loginUsername').value.trim();
         const password = document.getElementById('loginPassword').value;
@@ -96,12 +104,23 @@ document.addEventListener('DOMContentLoaded', function() {
         } catch (error) {
             console.error('Login error:', error);
             showAuthMessage('Network error. Please try again.');
+        } finally {
+            // Reset submitting flag
+            this.dataset.submitting = 'false';
         }
     });
     
     // Signup form handler
     document.getElementById('signupFormElement').addEventListener('submit', async function(e) {
         e.preventDefault();
+        e.stopImmediatePropagation(); // Stop other listeners from executing
+        
+        // Check if already submitting to prevent double submissions
+        if (this.dataset.submitting === 'true') {
+            console.log('Already submitting signup, ignoring duplicate event');
+            return;
+        }
+        this.dataset.submitting = 'true';
         
         // Prevent double submission
         const submitButton = this.querySelector('button[type="submit"]');
@@ -189,6 +208,9 @@ document.addEventListener('DOMContentLoaded', function() {
             // Re-enable submit button
             submitButton.disabled = false;
             submitButton.textContent = 'Create Account';
+            
+            // Reset submitting flag
+            this.dataset.submitting = 'false';
         }
     });
 });
