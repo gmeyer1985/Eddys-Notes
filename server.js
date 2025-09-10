@@ -590,15 +590,14 @@ app.post('/api/auth/signup', async (req, res) => {
 
 // Debug endpoint to check existing users (temporarily enabled for production debugging)
 app.get('/api/debug/users', (req, res) => {
-    // Temporarily allow in production for debugging
-    // if (NODE_ENV === 'production') {
-    //     return res.status(404).json({ error: 'Not found' });
-    // }
+    console.log('Debug users endpoint called');
     
-    db.all('SELECT id, username, email, created_at FROM users ORDER BY created_at DESC LIMIT 20', (err, rows) => {
+    db.all('SELECT id, username, email, is_admin, created_at FROM users ORDER BY created_at DESC LIMIT 20', (err, rows) => {
         if (err) {
+            console.error('Debug users error:', err);
             res.status(500).json({ error: err.message });
         } else {
+            console.log('Found users:', rows);
             res.json(rows);
         }
     });
@@ -606,6 +605,7 @@ app.get('/api/debug/users', (req, res) => {
 
 app.post('/api/auth/login', (req, res) => {
     const { username, password } = req.body;
+    console.log('Login attempt for username:', username);
 
     if (!username || !password) {
         return res.status(400).json({ error: 'Username and password are required' });
@@ -619,14 +619,19 @@ app.post('/api/auth/login', (req, res) => {
         }
 
         if (!user) {
+            console.log('User not found for username:', username);
             res.status(401).json({ error: 'Invalid credentials' });
             return;
         }
+        
+        console.log('User found:', user.username, 'ID:', user.id);
 
         try {
             const validPassword = await bcrypt.compare(password, user.password_hash);
+            console.log('Password valid:', validPassword);
             
             if (!validPassword) {
+                console.log('Invalid password for user:', username);
                 res.status(401).json({ error: 'Invalid credentials' });
                 return;
             }
@@ -637,6 +642,7 @@ app.post('/api/auth/login', (req, res) => {
             // Set session
             req.session.userId = user.id;
             req.session.username = user.username;
+            console.log('Login successful for user:', user.username, 'Session ID:', req.sessionID);
 
             res.json({
                 id: user.id,
