@@ -138,7 +138,23 @@ document.addEventListener('DOMContentLoaded', function() {
                     updateUIForLoggedInUser(data);
                 }, 1000);
             } else {
-                showAuthMessage(data.error || 'Signup failed');
+                let errorMessage = data.error || 'Signup failed';
+                
+                // If it's a duplicate account error, suggest login
+                if (errorMessage.includes('already exists') || errorMessage.includes('already in use')) {
+                    errorMessage += ' You can try logging in instead.';
+                    
+                    // Auto-switch to login tab after showing error
+                    setTimeout(() => {
+                        if (errorMessage.includes('email')) {
+                            // If email exists, pre-fill login form
+                            document.getElementById('loginUsername').value = email;
+                        }
+                        showLoginTab();
+                    }, 3000);
+                }
+                
+                showAuthMessage(errorMessage);
             }
         } catch (error) {
             console.error('Signup error:', error);
