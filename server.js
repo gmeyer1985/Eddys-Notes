@@ -58,13 +58,15 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 // Session configuration
 const sessionConfig = {
     secret: SESSION_SECRET,
+    name: 'connect.sid', // Explicit session cookie name
     resave: false,
     saveUninitialized: false,
     cookie: { 
         secure: false, // Temporarily disable secure cookies to troubleshoot
         maxAge: 24 * 60 * 60 * 1000, // 24 hours
         sameSite: 'lax', // Use lax for compatibility
-        httpOnly: false // Temporarily disable httpOnly to troubleshoot
+        httpOnly: false, // Temporarily disable httpOnly to troubleshoot
+        path: '/' // Explicit path
     }
 };
 
@@ -575,11 +577,17 @@ app.post('/api/auth/signup', async (req, res) => {
                             }
                             
                             console.log('DEBUG: Final session check - userId:', req.session.userId);
+                            
+                            // Add explicit cookie debugging
+                            res.setHeader('Set-Cookie-Debug', 'session-test=value; Path=/; SameSite=lax');
+                            console.log('DEBUG: Response headers will include session cookie');
+                            
                             res.json({ 
                                 id: this.lastID, 
                                 username: username, 
                                 email: email,
-                                message: 'Account created successfully!' 
+                                message: 'Account created successfully!',
+                                sessionId: req.sessionID // Add session ID to response for debugging
                             });
                         });
                     });
@@ -675,6 +683,8 @@ app.get('/api/auth/user', (req, res) => {
     console.log('DEBUG: /api/auth/user - Session ID:', req.sessionID);
     console.log('DEBUG: /api/auth/user - Session data:', req.session);
     console.log('DEBUG: /api/auth/user - User ID in session:', req.session.userId);
+    console.log('DEBUG: /api/auth/user - Cookies received:', req.headers.cookie);
+    console.log('DEBUG: /api/auth/user - All headers:', JSON.stringify(req.headers, null, 2));
     
     if (!req.session.userId) {
         return res.status(401).json({ error: 'Not authenticated' });
