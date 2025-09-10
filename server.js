@@ -447,97 +447,99 @@ app.post('/api/auth/signup', async (req, res) => {
         console.log('Signup attempt - Username:', username, 'Email:', email);
         
         // Use a proper transaction to prevent race conditions
-        db.run('BEGIN IMMEDIATE TRANSACTION', (beginErr) => {
-            if (beginErr) {
-                console.error('Error beginning transaction:', beginErr);
-                return res.status(500).json({ error: 'Database error occurred' });
-            }
-
-            // Single query to check both username and email within the transaction
-            const checkQuery = 'SELECT id, username, email FROM users WHERE LOWER(username) = LOWER(?) OR LOWER(email) = LOWER(?)';
-            console.log('DEBUG: Running duplicate check query in transaction:', checkQuery);
-            console.log('DEBUG: Query parameters:', [username, email]);
-            
-            db.get(checkQuery, [username, email], async (err, existingUser) => {
-                if (err) {
-                    console.error('Database error during user existence check:', err);
-                    db.run('ROLLBACK');
+        db.serialize(() => {
+            db.run('BEGIN IMMEDIATE', (beginErr) => {
+                if (beginErr) {
+                    console.error('Error beginning transaction:', beginErr);
                     return res.status(500).json({ error: 'Database error occurred' });
                 }
 
-                console.log('DEBUG: Duplicate check result:', existingUser || 'No duplicates found');
-
-                if (existingUser) {
-                    console.log('Duplicate found - Existing user:', existingUser);
-                    db.run('ROLLBACK');
-                    
-                    if (existingUser.email.toLowerCase() === email.toLowerCase()) {
-                        return res.status(400).json({ 
-                            error: 'An account with this email address already exists. Please try logging in instead.' 
-                        });
-                    } else {
-                        return res.status(400).json({ 
-                            error: 'This username is already taken. Please choose a different username.' 
-                        });
-                    }
-                }
-
-                console.log('No duplicates found, proceeding with user creation...');
-
-                // Hash password and create user within the transaction
-                bcrypt.hash(password, 10, (hashErr, passwordHash) => {
-                    if (hashErr) {
-                        console.error('Password hashing error:', hashErr);
+                // Single query to check both username and email within the transaction
+                const checkQuery = 'SELECT id, username, email FROM users WHERE LOWER(username) = LOWER(?) OR LOWER(email) = LOWER(?)';
+                console.log('DEBUG: Running duplicate check query in transaction:', checkQuery);
+                console.log('DEBUG: Query parameters:', [username, email]);
+                
+                db.get(checkQuery, [username, email], async (err, existingUser) => {
+                    if (err) {
+                        console.error('Database error during user existence check:', err);
                         db.run('ROLLBACK');
-                        return res.status(500).json({ error: 'Failed to process account creation. Please try again.' });
+                        return res.status(500).json({ error: 'Database error occurred' });
                     }
 
-                    // Create user within the serialized block to prevent race conditions
-                    const sql = `INSERT INTO users (username, email, password_hash, first_name, last_name, state)
-                                 VALUES (?, ?, ?, ?, ?, ?)`;
+                    console.log('DEBUG: Duplicate check result:', existingUser || 'No duplicates found');
 
-                    console.log('DEBUG: About to insert user with SQL:', sql);
-                    console.log('DEBUG: Insert parameters:', [username, email, '[REDACTED]', firstName || null, lastName || null, state || null]);
-                    
-                    db.run(sql, [username, email, passwordHash, firstName || null, lastName || null, state || null], function(err) {
-                        if (err) {
-                            console.error('Database error during user creation:', err);
+                    if (existingUser) {
+                        console.log('Duplicate found - Existing user:', existingUser);
+                        db.run('ROLLBACK');
+                        
+                        if (existingUser.email.toLowerCase() === email.toLowerCase()) {
+                            return res.status(400).json({ 
+                                error: 'An account with this email address already exists. Please try logging in instead.' 
+                            });
+                        } else {
+                            return res.status(400).json({ 
+                                error: 'This username is already taken. Please choose a different username.' 
+                            });
+                        }
+                    }
+
+                    console.log('No duplicates found, proceeding with user creation...');
+
+                    // Hash password and create user within the transaction
+                    bcrypt.hash(password, 10, (hashErr, passwordHash) => {
+                        if (hashErr) {
+                            console.error('Password hashing error:', hashErr);
                             db.run('ROLLBACK');
-                            
-                            // Handle specific SQLite constraint errors (fallback safety)
-                            if (err.message.includes('UNIQUE constraint failed: users.email')) {
-                                return res.status(400).json({ 
-                                    error: 'An account with this email address already exists. Please try logging in instead.' 
-                                });
-                            } else if (err.message.includes('UNIQUE constraint failed: users.username')) {
-                                return res.status(400).json({ 
-                                    error: 'This username is already taken. Please choose a different username.' 
-                                });
-                            } else if (err.message.includes('UNIQUE constraint failed')) {
-                                return res.status(400).json({ 
-                                    error: 'This username or email is already in use. Please try different values.' 
-                                });
-                            } else {
-                                return res.status(500).json({ error: 'Failed to create account. Please try again.' });
-                            }
+                            return res.status(500).json({ error: 'Failed to process account creation. Please try again.' });
                         }
 
-                        // Commit the transaction on successful insert
-                        db.run('COMMIT', (commitErr) => {
-                            if (commitErr) {
-                                console.error('Error committing transaction:', commitErr);
-                                return res.status(500).json({ error: 'Failed to create account. Please try again.' });
+                        // Create user within the transaction
+                        const sql = `INSERT INTO users (username, email, password_hash, first_name, last_name, state)
+                                     VALUES (?, ?, ?, ?, ?, ?)`;
+
+                        console.log('DEBUG: About to insert user with SQL:', sql);
+                        console.log('DEBUG: Insert parameters:', [username, email, '[REDACTED]', firstName || null, lastName || null, state || null]);
+                        
+                        db.run(sql, [username, email, passwordHash, firstName || null, lastName || null, state || null], function(err) {
+                            if (err) {
+                                console.error('Database error during user creation:', err);
+                                db.run('ROLLBACK');
+                                
+                                // Handle specific SQLite constraint errors (fallback safety)
+                                if (err.message.includes('UNIQUE constraint failed: users.email')) {
+                                    return res.status(400).json({ 
+                                        error: 'An account with this email address already exists. Please try logging in instead.' 
+                                    });
+                                } else if (err.message.includes('UNIQUE constraint failed: users.username')) {
+                                    return res.status(400).json({ 
+                                        error: 'This username is already taken. Please choose a different username.' 
+                                    });
+                                } else if (err.message.includes('UNIQUE constraint failed')) {
+                                    return res.status(400).json({ 
+                                        error: 'This username or email is already in use. Please try different values.' 
+                                    });
+                                } else {
+                                    return res.status(500).json({ error: 'Failed to create account. Please try again.' });
+                                }
                             }
 
-                            console.log('DEBUG: User creation successful!');
-                            console.log('New user created successfully:', username, 'with ID:', this.lastID);
-                            req.session.userId = this.lastID;
-                            req.session.username = username;
-                            res.json({ 
-                                id: this.lastID, 
-                                username: username, 
-                                email: email,
-                                message: 'Account created successfully!' 
+                            // Commit the transaction on successful insert
+                            db.run('COMMIT', (commitErr) => {
+                                if (commitErr) {
+                                    console.error('Error committing transaction:', commitErr);
+                                    return res.status(500).json({ error: 'Failed to create account. Please try again.' });
+                                }
+
+                                console.log('DEBUG: User creation successful!');
+                                console.log('New user created successfully:', username, 'with ID:', this.lastID);
+                                req.session.userId = this.lastID;
+                                req.session.username = username;
+                                res.json({ 
+                                    id: this.lastID, 
+                                    username: username, 
+                                    email: email,
+                                    message: 'Account created successfully!' 
+                                });
                             });
                         });
                     });
