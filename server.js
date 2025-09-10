@@ -123,6 +123,7 @@ function migrateToVolumeSync() {
         : 'fishing_log.db';                                // Default path
 
     console.log('Target database path:', newDbPath);
+    console.log('USE_VOLUME environment variable:', process.env.USE_VOLUME);
 
     if (isProduction && process.env.USE_VOLUME && newDbPath !== oldDbPath) {
         console.log('🔄 Volume migration mode enabled');
