@@ -538,7 +538,7 @@
                 
                 if (!response.ok || !user.is_admin) {
                     // Redirect to login if not admin
-                    window.location.href = '/table.html';
+                    window.location.href = '/';
                     return;
                 }
                 
@@ -546,7 +546,7 @@
                 loadDashboard();
             } catch (error) {
                 console.error('Auth check failed:', error);
-                window.location.href = '/table.html';
+                window.location.href = '/';
             }
         }
 
@@ -826,10 +826,10 @@
                     credentials: 'include'
                 });
                 
-                window.location.href = '/table.html';
+                window.location.href = '/';
             } catch (error) {
                 console.error('Logout failed:', error);
-                window.location.href = '/table.html';
+                window.location.href = '/';
             }
         }
 
