@@ -3,7 +3,13 @@ function showLoginTab() {
     document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
     document.querySelectorAll('.auth-form').forEach(form => form.classList.remove('active'));
     
-    event.target.classList.add('active');
+    // Find and activate the login tab button
+    const loginTabButton = document.querySelector('.tab-button[onclick*="showLoginTab"]') || 
+                          Array.from(document.querySelectorAll('.tab-button')).find(btn => btn.textContent.includes('Login'));
+    if (loginTabButton) {
+        loginTabButton.classList.add('active');
+    }
+    
     document.getElementById('loginForm').classList.add('active');
     clearAuthMessage();
 }
@@ -12,7 +18,13 @@ function showSignupTab() {
     document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
     document.querySelectorAll('.auth-form').forEach(form => form.classList.remove('active'));
     
-    event.target.classList.add('active');
+    // Find and activate the signup tab button
+    const signupTabButton = document.querySelector('.tab-button[onclick*="showSignupTab"]') || 
+                           Array.from(document.querySelectorAll('.tab-button')).find(btn => btn.textContent.includes('Sign Up'));
+    if (signupTabButton) {
+        signupTabButton.classList.add('active');
+    }
+    
     document.getElementById('signupForm').classList.add('active');
     clearAuthMessage();
 }
