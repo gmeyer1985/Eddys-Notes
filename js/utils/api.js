@@ -309,15 +309,12 @@ async function updateFishingEntry(entryId, entryData) {
     try {
         console.log('updateFishingEntry called with ID:', entryId, 'and data:', entryData);
 
-        // Since the backend doesn't support PUT updates, we'll delete the old entry
-        // and create a new one with the updated data
-        console.log('Deleting old entry with ID:', entryId);
-        await apiRequest(`/fishing-entries/${entryId}`, { method: 'DELETE' });
+        const result = await apiRequest(`/fishing-entries/${entryId}`, {
+            method: 'PUT',
+            body: JSON.stringify(entryData)
+        });
 
-        console.log('Creating new entry with updated data');
-        const result = await saveFishingEntry(entryData);
-
-        console.log('Entry successfully updated (via delete/create)');
+        console.log('Entry updated successfully:', result);
         return result;
     } catch (error) {
         console.error('Error updating fishing entry:', error);

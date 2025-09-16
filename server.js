@@ -856,6 +856,63 @@ app.post('/api/fishing-entries', requireAuth, (req, res) => {
     });
 });
 
+app.put('/api/fishing-entries/:id', requireAuth, (req, res) => {
+    const entryId = req.params.id;
+    const {
+        date, start_time, end_time, angler, species, length, weight,
+        city_state, latitude, longitude, site_number, river_name,
+        water_flow, weather_temp, barometric_pressure, wind_speed, wind_direction,
+        moon_phase, notes, flies_used, photo_data, cached_flow_data
+    } = req.body;
+
+    // Check if entry belongs to user first
+    db.get('SELECT id, photo_path FROM fishing_entries WHERE id = ? AND user_id = ?', [entryId, req.session.userId], (err, existingEntry) => {
+        if (err) {
+            return res.status(500).json({ error: err.message });
+        }
+        if (!existingEntry) {
+            return res.status(404).json({ error: 'Fishing entry not found or access denied' });
+        }
+
+        let photo_path = existingEntry.photo_path; // Keep existing photo by default
+
+        // Handle new photo if provided
+        if (photo_data) {
+            // Delete old photo if it exists
+            if (existingEntry.photo_path && fs.existsSync(existingEntry.photo_path)) {
+                fs.unlinkSync(existingEntry.photo_path);
+            }
+            // Save new photo
+            const base64Data = photo_data.replace(/^data:image\/\w+;base64,/, '');
+            photo_path = `uploads/${Date.now()}-fishing-photo.jpg`;
+            fs.writeFileSync(photo_path, base64Data, 'base64');
+        }
+
+        const sql = `UPDATE fishing_entries SET
+            date = ?, start_time = ?, end_time = ?, angler = ?, species = ?, length = ?, weight = ?,
+            city_state = ?, latitude = ?, longitude = ?, site_number = ?, river_name = ?,
+            water_flow = ?, weather_temp = ?, barometric_pressure = ?, wind_speed = ?, wind_direction = ?,
+            moon_phase = ?, notes = ?, flies_used = ?, photo_path = ?, cached_flow_data = ?
+            WHERE id = ? AND user_id = ?`;
+
+        db.run(sql, [
+            date, start_time, end_time, angler, species, length, weight,
+            city_state, latitude, longitude, site_number, river_name,
+            water_flow, weather_temp, barometric_pressure, wind_speed, wind_direction,
+            moon_phase, notes, flies_used, photo_path, cached_flow_data,
+            entryId, req.session.userId
+        ], function(err) {
+            if (err) {
+                res.status(500).json({ error: err.message });
+            } else if (this.changes === 0) {
+                res.status(404).json({ error: 'Fishing entry not found or no changes made' });
+            } else {
+                res.json({ id: entryId, message: 'Fishing entry updated successfully' });
+            }
+        });
+    });
+});
+
 app.delete('/api/fishing-entries/:id', requireAuth, (req, res) => {
     const id = req.params.id;
     
