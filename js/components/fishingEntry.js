@@ -167,6 +167,12 @@ async function deleteEntry(index) {
 }
 
 function populateEnvironmentalData() {
+    // Don't overwrite environmental data when editing an existing entry
+    if (currentEditIndex !== -1) {
+        console.log('Skipping environmental data population during edit mode');
+        return;
+    }
+
     var date = document.getElementById('entryDate').value;
     var cityState = document.getElementById('cityState').value;
     var lat = document.getElementById('selectedLat').value || document.getElementById('fishingLat').value;
@@ -218,6 +224,73 @@ function populateEnvironmentalData() {
         if (barometricPressure) barometricPressure.placeholder = 'N/A';
         if (windSpeed) windSpeed.placeholder = 'N/A';
         if (windDirection) windDirection.placeholder = 'N/A';
+    });
+}
+
+function forceRefreshEnvironmentalData() {
+    var date = document.getElementById('entryDate').value;
+    var cityState = document.getElementById('cityState').value;
+    var lat = document.getElementById('selectedLat').value || document.getElementById('fishingLat').value;
+    var lon = document.getElementById('selectedLon').value || document.getElementById('fishingLon').value;
+
+    if (!date || (!lat || !lon)) {
+        alert('Please select a date and location first before refreshing environmental data.');
+        return;
+    }
+
+    console.log('Force refreshing environmental data...');
+
+    // Reset fields to loading state
+    var airTemp = document.getElementById('airTemp');
+    var barometricPressure = document.getElementById('barometricPressure');
+    var windSpeed = document.getElementById('windSpeed');
+    var windDirection = document.getElementById('windDirection');
+
+    // Set loading state
+    if (airTemp) {
+        airTemp.value = '';
+        airTemp.placeholder = 'Loading...';
+    }
+    if (barometricPressure) {
+        barometricPressure.value = '';
+        barometricPressure.placeholder = 'Loading...';
+    }
+    if (windSpeed) {
+        windSpeed.value = '';
+        windSpeed.placeholder = 'Loading...';
+    }
+    if (windDirection) {
+        windDirection.value = '';
+        windDirection.placeholder = 'Loading...';
+    }
+
+    // Fetch weather data
+    getWeatherData(lat, lon, date, cityState).then(function(weatherData) {
+        if (airTemp) {
+            airTemp.value = weatherData.airTemp || '';
+            airTemp.placeholder = weatherData.airTemp ? '' : 'N/A';
+        }
+        if (barometricPressure) {
+            barometricPressure.value = weatherData.barometricPressure || '';
+            barometricPressure.placeholder = weatherData.barometricPressure ? '' : 'N/A';
+        }
+        if (windSpeed) {
+            windSpeed.value = weatherData.windSpeed || '';
+            windSpeed.placeholder = weatherData.windSpeed ? '' : 'N/A';
+        }
+        if (windDirection) {
+            windDirection.value = weatherData.windDirection || '';
+            windDirection.placeholder = weatherData.windDirection ? '' : 'N/A';
+        }
+        console.log('Environmental data refreshed successfully');
+    }).catch(function(error) {
+        console.error('Error refreshing environmental data:', error);
+        // Set N/A placeholders on error
+        if (airTemp) airTemp.placeholder = 'N/A';
+        if (barometricPressure) barometricPressure.placeholder = 'N/A';
+        if (windSpeed) windSpeed.placeholder = 'N/A';
+        if (windDirection) windDirection.placeholder = 'N/A';
+        alert('Failed to refresh environmental data. Please try again.');
     });
 }
 
