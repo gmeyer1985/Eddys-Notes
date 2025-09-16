@@ -38,13 +38,19 @@ function getWeatherData(lat, lon, date, cityState) {
 
         // Check if date is historical (more than 1 day ago)
         if (daysDiff > 1) {
-            // Use historical weather API for dates more than 1 day ago
-            var url = 'https://api.openweathermap.org/data/2.5/onecall/timemachine?lat=' + lat + '&lon=' + lon + '&dt=' + timestamp + '&appid=' + OPENWEATHER_API_KEY + '&units=imperial';
-            console.log('Using historical weather API for date:', date, 'timestamp:', timestamp);
+            // Use Open-Meteo free historical weather API
+            var formattedDate = dateObj.getFullYear() + '-' +
+                String(dateObj.getMonth() + 1).padStart(2, '0') + '-' +
+                String(dateObj.getDate()).padStart(2, '0');
+            var url = 'https://archive-api.open-meteo.com/v1/archive?latitude=' + lat +
+                '&longitude=' + lon + '&start_date=' + formattedDate +
+                '&end_date=' + formattedDate +
+                '&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,windspeed_10m_max,winddirection_10m_dominant&temperature_unit=fahrenheit&windspeed_unit=mph&timezone=auto';
+            console.log('Using Open-Meteo historical weather API for date:', date);
         } else {
-            // Use current weather API for today or yesterday
+            // Use OpenWeatherMap current weather API for recent dates
             var url = 'https://api.openweathermap.org/data/2.5/weather?lat=' + lat + '&lon=' + lon + '&appid=' + OPENWEATHER_API_KEY + '&units=imperial';
-            console.log('Using current weather API for recent date:', date);
+            console.log('Using OpenWeatherMap current weather API for recent date:', date);
         }
         
         // Add timeout to the fetch request
@@ -67,26 +73,28 @@ function getWeatherData(lat, lon, date, cityState) {
                 console.log('Weather data parsed successfully', data);
 
                 var weatherData;
-                if (daysDiff > 1 && data.current) {
-                    // Historical weather API response format
-                    console.log('Parsing historical weather data');
-                    var pressureInHg = data.current.pressure * 0.02953;
+                if (daysDiff > 1 && data.daily) {
+                    // Open-Meteo historical weather API response format
+                    console.log('Parsing Open-Meteo historical weather data');
+                    var dailyData = data.daily;
+                    var avgTemp = Math.round((dailyData.temperature_2m_max[0] + dailyData.temperature_2m_min[0]) / 2);
+
                     weatherData = {
-                        airTemp: Math.round(data.current.temp),
-                        barometricPressure: Math.round(pressureInHg * 100) / 100,
-                        windDirection: getWindDirection(data.current.wind_deg),
-                        windSpeed: Math.round(data.current.wind_speed),
+                        airTemp: avgTemp,
+                        barometricPressure: 29.92, // Standard pressure as Open-Meteo free tier doesn't include pressure
+                        windDirection: dailyData.winddirection_10m_dominant[0] ? getWindDirection(dailyData.winddirection_10m_dominant[0]) : 'Variable',
+                        windSpeed: Math.round(dailyData.windspeed_10m_max[0] || 0),
                         location: 'Historical Location (' + date + ')'
                     };
                 } else if (data.main) {
-                    // Current weather API response format
-                    console.log('Parsing current weather data');
+                    // OpenWeatherMap current weather API response format
+                    console.log('Parsing OpenWeatherMap current weather data');
                     var pressureInHg = data.main.pressure * 0.02953;
                     weatherData = {
                         airTemp: Math.round(data.main.temp),
                         barometricPressure: Math.round(pressureInHg * 100) / 100,
-                        windDirection: getWindDirection(data.wind.deg),
-                        windSpeed: Math.round(data.wind.speed),
+                        windDirection: data.wind ? getWindDirection(data.wind.deg) : 'Variable',
+                        windSpeed: data.wind ? Math.round(data.wind.speed) : 0,
                         location: data.name + ', ' + data.sys.country
                     };
                 } else {
