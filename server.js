@@ -1690,14 +1690,19 @@ app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);
 });
 
-// Graceful shutdown
-process.on('SIGINT', () => {
+// Graceful shutdown handlers
+function gracefulShutdown(signal) {
+    console.log(`\n${signal} received. Shutting down gracefully...`);
     db.close((err) => {
         if (err) {
             console.error('Error closing database:', err);
         } else {
             console.log('Database connection closed');
         }
+        console.log('Server shutdown complete');
         process.exit(0);
     });
-});
+}
+
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
