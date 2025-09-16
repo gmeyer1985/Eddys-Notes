@@ -208,65 +208,85 @@
             <div class="status-message" id="statusMessage"></div>
             
             <form id="fishingForm">
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label for="entryDate">Date *</label>
-                        <input type="date" id="entryDate" required>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="cityState">City, State *</label>
-                        <input type="text" id="cityState" placeholder="Minneapolis, MN" required oninput="searchCityState()">
-                        <div id="cityStateResults" style="display: none; max-height: 150px; overflow-y: auto; border: 1px solid rgba(139, 69, 19, 0.5); border-radius: 4px; margin-top: 5px; background: rgba(0, 0, 0, 0.9); position: relative; z-index: 100;"></div>
-                        <input type="hidden" id="selectedLat">
-                        <input type="hidden" id="selectedLon">
-                    </div>
-                    
-                    <div class="form-group time-on-water">
-                        <label>Time on Water</label>
-                        <div class="time-input-group">
-                            <input type="time" id="startTime" placeholder="Start Time">
-                            <input type="time" id="endTime" placeholder="End Time">
+                <!-- Basic Trip Information -->
+                <div class="form-section">
+                    <h3 class="section-title">📅 Trip Details</h3>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="entryDate">Date *</label>
+                            <input type="date" id="entryDate" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="angler">Angler *</label>
+                            <input type="text" id="angler" placeholder="Angler name" required>
+                        </div>
+
+                        <div class="form-group time-on-water">
+                            <label>Time on Water</label>
+                            <div class="time-input-group">
+                                <input type="time" id="startTime" placeholder="Start Time">
+                                <input type="time" id="endTime" placeholder="End Time">
+                            </div>
                         </div>
                     </div>
-                    
-                    <div class="form-group">
-                        <label for="waterTemp">Water Temperature (°F)</label>
-                        <input type="number" id="waterTemp" placeholder="65">
+                </div>
+
+                <!-- Location Information -->
+                <div class="form-section">
+                    <h3 class="section-title">📍 Location & Water</h3>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="cityState">City, State *</label>
+                            <input type="text" id="cityState" placeholder="Minneapolis, MN" required oninput="searchCityState()">
+                            <div id="cityStateResults" style="display: none; max-height: 150px; overflow-y: auto; border: 1px solid rgba(139, 69, 19, 0.5); border-radius: 4px; margin-top: 5px; background: rgba(0, 0, 0, 0.9); position: relative; z-index: 100;"></div>
+                            <input type="hidden" id="selectedLat">
+                            <input type="hidden" id="selectedLon">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="riverSearch">River/Stream Name</label>
+                            <input type="text" id="riverSearch" placeholder="Search for river or stream..." oninput="searchRiversForEntry()">
+                            <div id="riverResults" style="display: none; max-height: 150px; overflow-y: auto; border: 1px solid rgba(139, 69, 19, 0.5); border-radius: 4px; margin-top: 5px; background: rgba(0, 0, 0, 0.9); position: relative; z-index: 100;"></div>
+                            <input type="hidden" id="selectedSiteNumber">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="waterFlow">Current Flow (CFS)</label>
+                            <input type="text" id="waterFlow" readonly placeholder="Select river to get flow data">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="waterTemp">Water Temperature (°F)</label>
+                            <input type="number" id="waterTemp" placeholder="65">
+                        </div>
                     </div>
-                    
-                    <div class="form-group">
-                        <label for="riverSearch">River/Stream Name</label>
-                        <input type="text" id="riverSearch" placeholder="Search for river or stream..." oninput="searchRiversForEntry()">
-                        <div id="riverResults" style="display: none; max-height: 150px; overflow-y: auto; border: 1px solid rgba(139, 69, 19, 0.5); border-radius: 4px; margin-top: 5px; background: rgba(0, 0, 0, 0.9); position: relative; z-index: 100;"></div>
-                        <input type="hidden" id="selectedSiteNumber">
+                </div>
+
+                <!-- Fishing Details -->
+                <div class="form-section">
+                    <h3 class="section-title">🎣 Fishing Details</h3>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="targetSpecies">Target Species</label>
+                            <input type="text" id="targetSpecies" placeholder="e.g., Rainbow Trout">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="fliesUsed">Flies Used</label>
+                            <input type="text" id="fliesUsed" placeholder="e.g., Adams, Blue Winged Olive">
+                        </div>
                     </div>
-                    
-                    <div class="form-group">
-                        <label for="waterFlow">Current Flow (CFS)</label>
-                        <input type="text" id="waterFlow" readonly placeholder="Select river to get flow data">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="targetSpecies">Target Species</label>
-                        <input type="text" id="targetSpecies" placeholder="e.g., Rainbow Trout">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="angler">Angler</label>
-                        <input type="text" id="angler" placeholder="Angler name">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="fliesUsed">Flies Used</label>
-                        <input type="text" id="fliesUsed" placeholder="e.g., Adams, Blue Winged Olive">
-                    </div>
-                    
+
                     <div class="form-group full-width">
                         <label for="notes">Notes</label>
                         <textarea id="notes" rows="4" placeholder="Add your fishing notes here..."></textarea>
                     </div>
-                    
+                </div>
+
+                <!-- Location Map -->
+                <div class="form-section">
+                    <h3 class="section-title">🗺️ Precise Location</h3>
                     <div class="form-group full-width">
                         <label for="fishingLocationMap">Fishing Location</label>
                         <div id="fishingLocationMap"></div>

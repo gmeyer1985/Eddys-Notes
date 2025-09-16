@@ -18,13 +18,24 @@ function closeProfileModal() {
 async function loadUserProfile() {
     try {
         const profile = await apiRequest('/profile');
+
+        // Parse the address field if it exists (backward compatibility)
+        let street = '', city = '', state = '', zip = '';
+        if (profile.address) {
+            const addressParts = parseAddress(profile.address);
+            street = addressParts.street;
+            city = addressParts.city;
+            state = addressParts.state;
+            zip = addressParts.zip;
+        }
+
         userProfile = {
             firstName: profile.first_name || '',
             lastName: profile.last_name || '',
-            street: profile.street || '',
-            city: profile.city || '',
-            state: profile.state || '',
-            zip: profile.zip || '',
+            street: street,
+            city: city,
+            state: state,
+            zip: zip,
             phone: profile.phone || '',
             email: profile.email || '',
             photoData: profile.photo_path ? `/uploads/${profile.photo_path.split('/').pop()}` : null
@@ -59,13 +70,19 @@ async function saveUserProfile() {
     }
 
     try {
+        // Combine address fields into a single address string for backend compatibility
+        const street = document.getElementById('profileStreet').value;
+        const city = document.getElementById('profileCity').value;
+        const state = document.getElementById('profileState').value;
+        const zip = document.getElementById('profileZip').value;
+
+        const addressParts = [street, city, state, zip].filter(part => part.trim() !== '');
+        const combinedAddress = addressParts.join(', ');
+
         const profileData = {
             first_name: document.getElementById('profileFirstName').value,
             last_name: document.getElementById('profileLastName').value,
-            street: document.getElementById('profileStreet').value,
-            city: document.getElementById('profileCity').value,
-            state: document.getElementById('profileState').value,
-            zip: document.getElementById('profileZip').value,
+            address: combinedAddress,
             phone: unformatPhoneNumber(document.getElementById('profilePhone').value),
             photo_data: profilePhotoData
         };
@@ -333,4 +350,53 @@ function handlePhoneNumberInput(event) {
     setTimeout(() => {
         input.setSelectionRange(newCursorPosition, newCursorPosition);
     }, 0);
+}
+
+// Address parsing function to split combined address into components
+function parseAddress(addressString) {
+    if (!addressString) {
+        return { street: '', city: '', state: '', zip: '' };
+    }
+
+    // Split by commas and trim whitespace
+    const parts = addressString.split(',').map(part => part.trim());
+
+    // Try to identify components based on patterns
+    let street = '', city = '', state = '', zip = '';
+
+    if (parts.length === 1) {
+        // Only one part - treat as street
+        street = parts[0];
+    } else if (parts.length === 2) {
+        // Two parts - street, city or city, state
+        street = parts[0];
+        const lastPart = parts[1];
+        // Check if last part looks like "State ZIP" pattern
+        const stateZipMatch = lastPart.match(/^([A-Z]{2})\s+(\d{5}(?:-\d{4})?)$/);
+        if (stateZipMatch) {
+            state = stateZipMatch[1];
+            zip = stateZipMatch[2];
+        } else {
+            city = lastPart;
+        }
+    } else if (parts.length === 3) {
+        // Three parts - street, city, state or street, city, zip
+        street = parts[0];
+        city = parts[1];
+        const lastPart = parts[2];
+        // Check if it's a ZIP code pattern
+        if (/^\d{5}(?:-\d{4})?$/.test(lastPart)) {
+            zip = lastPart;
+        } else {
+            state = lastPart;
+        }
+    } else if (parts.length >= 4) {
+        // Four or more parts - street, city, state, zip
+        street = parts[0];
+        city = parts[1];
+        state = parts[2];
+        zip = parts[3];
+    }
+
+    return { street, city, state, zip };
 }

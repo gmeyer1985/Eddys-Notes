@@ -8,15 +8,62 @@ function showAddModal() {
     var modalTitle = document.getElementById('modalTitle');
     var fishingForm = document.getElementById('fishingForm');
     var entryModal = document.getElementById('entryModal');
-    
+
     if (modalTitle) modalTitle.textContent = 'Add New Fishing Entry';
     if (fishingForm) fishingForm.reset();
     if (entryModal) entryModal.style.display = 'block';
-    
+
+    // Apply smart defaults
+    applySmartDefaults();
+
     // Initialize map after modal is shown
     setTimeout(function() {
         initializeFishingLocationMap();
     }, 100);
+}
+
+function applySmartDefaults() {
+    // Set today's date
+    var today = new Date();
+    var dateString = today.getFullYear() + '-' +
+                    String(today.getMonth() + 1).padStart(2, '0') + '-' +
+                    String(today.getDate()).padStart(2, '0');
+
+    var entryDate = document.getElementById('entryDate');
+    if (entryDate && !entryDate.value) {
+        entryDate.value = dateString;
+    }
+
+    // Set current user as angler (if available from global user context)
+    var anglerField = document.getElementById('angler');
+    if (anglerField && !anglerField.value && typeof currentUser !== 'undefined' && currentUser) {
+        // Try different possible name combinations
+        var userName = '';
+        if (currentUser.first_name && currentUser.last_name) {
+            userName = currentUser.first_name + ' ' + currentUser.last_name;
+        } else if (currentUser.firstName && currentUser.lastName) {
+            userName = currentUser.firstName + ' ' + currentUser.lastName;
+        } else if (currentUser.username) {
+            userName = currentUser.username;
+        }
+
+        if (userName) {
+            anglerField.value = userName;
+        }
+    }
+
+    // Set default start time to current time (rounded to nearest 15 minutes)
+    var startTimeField = document.getElementById('startTime');
+    if (startTimeField && !startTimeField.value) {
+        var now = new Date();
+        var minutes = Math.round(now.getMinutes() / 15) * 15;
+        now.setMinutes(minutes);
+        now.setSeconds(0);
+
+        var timeString = String(now.getHours()).padStart(2, '0') + ':' +
+                        String(now.getMinutes()).padStart(2, '0');
+        startTimeField.value = timeString;
+    }
 }
 
 function editEntry(index) {
@@ -304,12 +351,8 @@ function renderTable() {
             '<td>' + (entry.targetSpecies || 'Not specified') + '</td>' +
             '<td>' + (entry.angler || 'Unknown') + '</td>' +
             '<td class="actions-cell">' +
-            '<button class="icon-btn icon-btn-edit" onclick="editEntry(' + i + ')" title="Edit Entry">' +
-            '<i data-lucide="edit-3"></i>' +
-            '</button>' +
-            '<button class="icon-btn icon-btn-delete" onclick="deleteEntry(' + i + ')" title="Delete Entry">' +
-            '<i data-lucide="trash-2"></i>' +
-            '</button>' +
+            '<button class="btn btn-sm btn-success" onclick="editEntry(' + i + ')" title="Edit Entry" style="margin-right: 6px; padding: 4px 8px; font-size: 11px;">✏️ Edit</button>' +
+            '<button class="btn btn-sm btn-danger" onclick="deleteEntry(' + i + ')" title="Delete Entry" style="padding: 4px 8px; font-size: 11px;">🗑️ Delete</button>' +
             '</td>';
         
         tbody.appendChild(row);
@@ -390,12 +433,8 @@ function renderTable() {
                     (entry.notes ? '<div class="card-section"><div class="notes"><span class="label">Notes:</span><p>' + entry.notes + '</p></div></div>' : '') +
                 '</div>' +
                 '<div class="card-actions">' +
-                    '<button class="icon-btn icon-btn-edit" onclick="editEntry(' + i + ')" title="Edit Entry">' +
-                    '<i data-lucide="edit-3"></i>' +
-                    '</button>' +
-                    '<button class="icon-btn icon-btn-delete" onclick="deleteEntry(' + i + ')" title="Delete Entry">' +
-                    '<i data-lucide="trash-2"></i>' +
-                    '</button>' +
+                    '<button class="btn btn-sm btn-success" onclick="editEntry(' + i + ')" title="Edit Entry" style="margin-right: 8px; padding: 8px 12px; font-size: 12px; flex: 1;">✏️ Edit</button>' +
+                    '<button class="btn btn-sm btn-danger" onclick="deleteEntry(' + i + ')" title="Delete Entry" style="padding: 8px 12px; font-size: 12px; flex: 1;">🗑️ Delete</button>' +
                 '</div>';
                 
             mobileContainer.appendChild(card);

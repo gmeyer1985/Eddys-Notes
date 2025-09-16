@@ -1201,6 +1201,8 @@
         .actions-cell {
             white-space: nowrap;
             text-align: center;
+            min-width: 120px;
+            padding: 8px 4px;
         }
 
         tr:nth-child(even) {
@@ -1263,6 +1265,27 @@
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
             gap: 20px;
+        }
+
+        /* Form Section Styling */
+        .form-section {
+            background: rgba(139, 69, 19, 0.05);
+            border: 1px solid rgba(139, 69, 19, 0.2);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .section-title {
+            color: #CD853F;
+            font-size: 16px;
+            font-weight: 600;
+            margin: 0 0 15px 0;
+            padding-bottom: 8px;
+            border-bottom: 1px solid rgba(139, 69, 19, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
         .form-group {
@@ -2112,6 +2135,26 @@
                 -webkit-user-select: none;
             }
 
+            /* Mobile form sections */
+            .form-section {
+                padding: 15px !important;
+                margin-bottom: 15px !important;
+            }
+
+            .form-section h4 {
+                font-size: 1rem !important;
+                margin-bottom: 10px !important;
+            }
+
+            .form-group {
+                margin-bottom: 15px !important;
+            }
+
+            .form-group label {
+                font-size: 14px !important;
+                margin-bottom: 5px !important;
+            }
+
             /* Mobile buttons */
             .btn {
                 padding: 12px 20px;
@@ -2152,6 +2195,27 @@
             
             .modal-content {
                 margin: 10px 5px;
+            }
+
+            /* Compact form sections on small screens */
+            .form-section {
+                padding: 10px !important;
+                margin-bottom: 10px !important;
+            }
+
+            .form-section h4 {
+                font-size: 0.9rem !important;
+                margin-bottom: 8px !important;
+            }
+
+            /* Stack form elements vertically on small screens */
+            .form-row {
+                flex-direction: column !important;
+            }
+
+            .form-row .form-group {
+                width: 100% !important;
+                margin-right: 0 !important;
             }
         }
         
