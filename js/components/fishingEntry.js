@@ -127,60 +127,65 @@ function editEntry(index) {
         fishWeight: !!fishWeight
     });
 
-    // Populate form fields with debugging
+    // Helper function to safely set form values
+    function safeSetValue(element, value) {
+        return (value !== null && value !== undefined) ? value : '';
+    }
+
+    // Populate form fields with null-safe values
     if (entryDate) {
-        entryDate.value = entry.date || '';
+        entryDate.value = safeSetValue(null, entry.date);
         console.log('Set entryDate to:', entry.date);
     }
-    if (cityState) cityState.value = entry.cityState || '';
-    if (selectedLat) selectedLat.value = entry.latitude || '';
-    if (selectedLon) selectedLon.value = entry.longitude || '';
+    if (cityState) cityState.value = safeSetValue(null, entry.cityState);
+    if (selectedLat) selectedLat.value = safeSetValue(null, entry.latitude);
+    if (selectedLon) selectedLon.value = safeSetValue(null, entry.longitude);
     if (startTime) {
-        startTime.value = entry.startTime || '';
-        console.log('Set startTime to:', entry.startTime);
+        startTime.value = safeSetValue(null, entry.startTime);
+        console.log('Set startTime to:', entry.startTime, 'result:', startTime.value);
     }
     if (endTime) {
-        endTime.value = entry.endTime || '';
-        console.log('Set endTime to:', entry.endTime);
+        endTime.value = safeSetValue(null, entry.endTime);
+        console.log('Set endTime to:', entry.endTime, 'result:', endTime.value);
     }
-    if (waterTemp) waterTemp.value = entry.waterTemp || '';
-    if (waterFlow) waterFlow.value = entry.waterFlow || '';
+    if (waterTemp) waterTemp.value = safeSetValue(null, entry.waterTemp);
+    if (waterFlow) waterFlow.value = safeSetValue(null, entry.waterFlow);
     if (targetSpecies) {
-        targetSpecies.value = entry.targetSpecies || '';
+        targetSpecies.value = safeSetValue(null, entry.targetSpecies);
         console.log('Set targetSpecies to:', entry.targetSpecies);
     }
     if (fishLength) {
-        fishLength.value = entry.length || '';
+        fishLength.value = safeSetValue(null, entry.length);
         console.log('Set fishLength to:', entry.length);
     }
     if (fishWeight) {
-        fishWeight.value = entry.weight || '';
+        fishWeight.value = safeSetValue(null, entry.weight);
         console.log('Set fishWeight to:', entry.weight);
     }
-    if (airTemp) airTemp.value = entry.weatherTemp || '';
-    if (barometricPressure) barometricPressure.value = entry.barometricPressure || '';
-    if (windSpeed) windSpeed.value = entry.windSpeed || '';
-    if (windDirection) windDirection.value = entry.windDirection || '';
+    if (airTemp) airTemp.value = safeSetValue(null, entry.weatherTemp);
+    if (barometricPressure) barometricPressure.value = safeSetValue(null, entry.barometricPressure);
+    if (windSpeed) windSpeed.value = safeSetValue(null, entry.windSpeed);
+    if (windDirection) windDirection.value = safeSetValue(null, entry.windDirection);
     if (angler) {
-        angler.value = entry.angler || '';
+        angler.value = safeSetValue(null, entry.angler);
         console.log('Set angler to:', entry.angler);
     }
-    if (fliesUsed) fliesUsed.value = entry.fliesUsed || '';
-    if (notes) notes.value = entry.notes || '';
-    
+    if (fliesUsed) fliesUsed.value = safeSetValue(null, entry.fliesUsed);
+    if (notes) notes.value = safeSetValue(null, entry.notes);
+
     // Set river search fields
     var riverSearch = document.getElementById('riverSearch');
     var selectedSiteNumber = document.getElementById('selectedSiteNumber');
-    if (riverSearch) riverSearch.value = entry.riverName || '';
-    if (selectedSiteNumber) selectedSiteNumber.value = entry.siteNumber || '';
-    
+    if (riverSearch) riverSearch.value = safeSetValue(null, entry.riverName);
+    if (selectedSiteNumber) selectedSiteNumber.value = safeSetValue(null, entry.siteNumber);
+
     // Set location fields
     var fishingLat = document.getElementById('fishingLat');
     var fishingLon = document.getElementById('fishingLon');
     var fishingAddress = document.getElementById('fishingAddress');
-    if (fishingLat) fishingLat.value = entry.latitude || '';
-    if (fishingLon) fishingLon.value = entry.longitude || '';
-    if (fishingAddress) fishingAddress.value = entry.fishingAddress || '';
+    if (fishingLat) fishingLat.value = safeSetValue(null, entry.latitude);
+    if (fishingLon) fishingLon.value = safeSetValue(null, entry.longitude);
+    if (fishingAddress) fishingAddress.value = safeSetValue(null, entry.fishingAddress);
 
     if (entryModal) entryModal.style.display = 'block';
 
