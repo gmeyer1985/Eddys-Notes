@@ -333,39 +333,45 @@ function showFlowGraph() {
 
 function showTableFlowGraph(entryIndex) {
     var entry = fishingData[entryIndex];
-    
+
     console.log('showTableFlowGraph called with entry:', entry);
-    
+
     if (!entry.siteNumber || !entry.date) {
         alert('Missing river or date information for this entry.\nSite Number: ' + entry.siteNumber + '\nDate: ' + entry.date);
         return;
     }
-    
+
+    // Calculate time range for fishing session
+    var timeRange = getFishingTimeRange(entry);
+    var titleSuffix = timeRange ? ' (' + timeRange + ')' : ' (' + entry.date + ')';
+
     var modal = document.getElementById('flowGraphModal');
     var title = document.getElementById('graphTitle');
-    title.textContent = 'Flow Rate Graph - ' + (entry.riverName || 'Unknown River') + ' (' + entry.date + ')';
+    title.textContent = 'Flow Rate Graph - ' + (entry.riverName || 'Unknown River') + titleSuffix;
     modal.style.display = 'block';
-    
+
     // Check if we have cached flow data first
     if (entry.cachedFlowData) {
         console.log('Using cached flow data for entry');
         try {
             var cachedData = JSON.parse(entry.cachedFlowData);
             console.log('Parsed cached data:', cachedData);
-            displayFlowChart(cachedData, entry.riverName || 'Unknown River', entry.date);
+            var filteredData = filterFlowDataByTime(cachedData, entry);
+            displayFlowChart(filteredData, entry.riverName || 'Unknown River', entry.date);
             return;
         } catch (error) {
             console.warn('Failed to parse cached flow data, falling back to API:', error);
         }
     }
-    
+
     console.log('No cached data available, fetching from USGS API for site:', entry.siteNumber, 'date:', entry.date);
-    
+
     // Fetch and display hourly data using entry data
     getHourlyFlowData(entry.siteNumber, entry.date)
         .then(function(hourlyData) {
             console.log('Received hourly data:', hourlyData);
-            displayFlowChart(hourlyData, entry.riverName || 'Unknown River', entry.date);
+            var filteredData = filterFlowDataByTime(hourlyData, entry);
+            displayFlowChart(filteredData, entry.riverName || 'Unknown River', entry.date);
         })
         .catch(function(error) {
             console.error('Error fetching hourly flow data:', error);
@@ -377,12 +383,95 @@ function showTableFlowGraph(entryIndex) {
 function closeFlowGraph() {
     var modal = document.getElementById('flowGraphModal');
     modal.style.display = 'none';
-    
+
     // Destroy existing chart
     if (flowChart) {
         flowChart.destroy();
         flowChart = null;
     }
+}
+
+function getFishingTimeRange(entry) {
+    if (!entry.startTime || !entry.endTime) {
+        return null;
+    }
+
+    // Round start time down to nearest hour and end time up to nearest hour
+    var startHour = Math.floor(parseInt(entry.startTime.split(':')[0]));
+    var endHour = Math.ceil(parseInt(entry.endTime.split(':')[0]));
+
+    // Handle case where end time minutes are 0 (don't round up)
+    var endMinutes = parseInt(entry.endTime.split(':')[1] || 0);
+    if (endMinutes === 0) {
+        endHour = parseInt(entry.endTime.split(':')[0]);
+    }
+
+    // Format hours as time strings
+    var startTimeStr = String(startHour).padStart(2, '0') + ':00';
+    var endTimeStr = String(endHour).padStart(2, '0') + ':00';
+
+    return startTimeStr + ' - ' + endTimeStr;
+}
+
+function filterFlowDataByTime(hourlyData, entry) {
+    if (!entry.startTime || !entry.endTime || !hourlyData || hourlyData.length === 0) {
+        return hourlyData;
+    }
+
+    console.log('Filtering flow data for fishing times:', entry.startTime, 'to', entry.endTime);
+
+    // Round start time down to nearest hour and end time up to nearest hour
+    var startHour = Math.floor(parseInt(entry.startTime.split(':')[0]));
+    var endHour = Math.ceil(parseInt(entry.endTime.split(':')[0]));
+
+    // Handle case where end time minutes are 0 (don't round up)
+    var endMinutes = parseInt(entry.endTime.split(':')[1] || 0);
+    if (endMinutes === 0) {
+        endHour = parseInt(entry.endTime.split(':')[0]);
+    }
+
+    console.log('Filtering to hours:', startHour, 'to', endHour);
+
+    // Filter hourly data to include only fishing time range
+    var filteredData = hourlyData.filter(function(dataPoint) {
+        // Extract hour from time string (format varies: "HH:MM", "HH:00", "YYYY-MM-DD HH:MM")
+        var timeStr = dataPoint.time;
+        var hour;
+
+        if (timeStr.includes('-')) {
+            // ISO datetime format: "2024-01-01 14:00"
+            hour = parseInt(timeStr.split(' ')[1].split(':')[0]);
+        } else {
+            // Simple time format: "14:00"
+            hour = parseInt(timeStr.split(':')[0]);
+        }
+
+        return hour >= startHour && hour <= endHour;
+    });
+
+    console.log('Filtered data points:', filteredData.length, 'from original:', hourlyData.length);
+
+    // If no data in fishing time range, expand range slightly
+    if (filteredData.length === 0 && hourlyData.length > 0) {
+        console.log('No data in fishing time range, expanding range by ±2 hours');
+        var expandedStart = Math.max(0, startHour - 2);
+        var expandedEnd = Math.min(23, endHour + 2);
+
+        filteredData = hourlyData.filter(function(dataPoint) {
+            var timeStr = dataPoint.time;
+            var hour;
+
+            if (timeStr.includes('-')) {
+                hour = parseInt(timeStr.split(' ')[1].split(':')[0]);
+            } else {
+                hour = parseInt(timeStr.split(':')[0]);
+            }
+
+            return hour >= expandedStart && hour <= expandedEnd;
+        });
+    }
+
+    return filteredData;
 }
 
 function getHourlyFlowData(siteNumber, date) {
