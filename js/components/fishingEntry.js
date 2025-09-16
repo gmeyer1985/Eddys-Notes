@@ -93,9 +93,10 @@ function editEntry(index) {
 
     var modalTitle = document.getElementById('modalTitle');
     var entryModal = document.getElementById('entryModal');
-    
+
     if (modalTitle) modalTitle.textContent = 'Edit Fishing Entry';
-    
+
+    // Get all form elements
     var entryDate = document.getElementById('entryDate');
     var cityState = document.getElementById('cityState');
     var selectedLat = document.getElementById('selectedLat');
@@ -112,21 +113,58 @@ function editEntry(index) {
     var barometricPressure = document.getElementById('barometricPressure');
     var windSpeed = document.getElementById('windSpeed');
     var windDirection = document.getElementById('windDirection');
+    var fishLength = document.getElementById('fishLength');
+    var fishWeight = document.getElementById('fishWeight');
 
-    if (entryDate) entryDate.value = entry.date || '';
+    // Debug: Check which elements are found
+    console.log('Form elements found:', {
+        entryDate: !!entryDate,
+        startTime: !!startTime,
+        endTime: !!endTime,
+        angler: !!angler,
+        targetSpecies: !!targetSpecies,
+        fishLength: !!fishLength,
+        fishWeight: !!fishWeight
+    });
+
+    // Populate form fields with debugging
+    if (entryDate) {
+        entryDate.value = entry.date || '';
+        console.log('Set entryDate to:', entry.date);
+    }
     if (cityState) cityState.value = entry.cityState || '';
     if (selectedLat) selectedLat.value = entry.latitude || '';
     if (selectedLon) selectedLon.value = entry.longitude || '';
-    if (startTime) startTime.value = entry.startTime || '';
-    if (endTime) endTime.value = entry.endTime || '';
+    if (startTime) {
+        startTime.value = entry.startTime || '';
+        console.log('Set startTime to:', entry.startTime);
+    }
+    if (endTime) {
+        endTime.value = entry.endTime || '';
+        console.log('Set endTime to:', entry.endTime);
+    }
     if (waterTemp) waterTemp.value = entry.waterTemp || '';
     if (waterFlow) waterFlow.value = entry.waterFlow || '';
-    if (targetSpecies) targetSpecies.value = entry.targetSpecies || '';
+    if (targetSpecies) {
+        targetSpecies.value = entry.targetSpecies || '';
+        console.log('Set targetSpecies to:', entry.targetSpecies);
+    }
+    if (fishLength) {
+        fishLength.value = entry.length || '';
+        console.log('Set fishLength to:', entry.length);
+    }
+    if (fishWeight) {
+        fishWeight.value = entry.weight || '';
+        console.log('Set fishWeight to:', entry.weight);
+    }
     if (airTemp) airTemp.value = entry.weatherTemp || '';
     if (barometricPressure) barometricPressure.value = entry.barometricPressure || '';
     if (windSpeed) windSpeed.value = entry.windSpeed || '';
     if (windDirection) windDirection.value = entry.windDirection || '';
-    if (angler) angler.value = entry.angler || '';
+    if (angler) {
+        angler.value = entry.angler || '';
+        console.log('Set angler to:', entry.angler);
+    }
     if (fliesUsed) fliesUsed.value = entry.fliesUsed || '';
     if (notes) notes.value = entry.notes || '';
     
