@@ -71,6 +71,11 @@ function setupEventListeners() {
     if (profilePhotoInput) {
         profilePhotoInput.addEventListener('change', handleProfilePhotoUpload);
     }
+
+    var profilePhoneInput = document.getElementById('profilePhone');
+    if (profilePhoneInput) {
+        profilePhoneInput.addEventListener('input', handlePhoneNumberInput);
+    }
     
     // License form event listeners
     var licenseForm = document.getElementById('licenseForm');
@@ -132,6 +137,7 @@ window.onclick = function(event) {
     var profileModal = document.getElementById('profileModal');
     var riverFlowModal = document.getElementById('riverFlowModal');
     var licenseLibraryModal = document.getElementById('licenseLibraryModal');
+    var documentViewerModal = document.getElementById('documentViewerModal');
     var authModal = document.getElementById('authModal');
     var navMenu = document.getElementById('navMenu');
     var hamburgerMenu = document.querySelector('.hamburger-menu');
@@ -150,6 +156,9 @@ window.onclick = function(event) {
     }
     if (event.target === licenseLibraryModal) {
         closeLicenseLibraryModal();
+    }
+    if (event.target === documentViewerModal) {
+        closeDocumentViewer();
     }
     if (event.target === authModal) {
         // Don't allow closing auth modal by clicking outside

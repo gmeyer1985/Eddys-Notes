@@ -21,18 +21,24 @@ async function loadUserProfile() {
         userProfile = {
             firstName: profile.first_name || '',
             lastName: profile.last_name || '',
-            address: profile.address || '',
+            street: profile.street || '',
+            city: profile.city || '',
+            state: profile.state || '',
+            zip: profile.zip || '',
             phone: profile.phone || '',
             email: profile.email || '',
             photoData: profile.photo_path ? `/uploads/${profile.photo_path.split('/').pop()}` : null
         };
-        
+
         document.getElementById('profileFirstName').value = userProfile.firstName;
         document.getElementById('profileLastName').value = userProfile.lastName;
-        document.getElementById('profileAddress').value = userProfile.address;
-        document.getElementById('profilePhone').value = userProfile.phone;
+        document.getElementById('profileStreet').value = userProfile.street;
+        document.getElementById('profileCity').value = userProfile.city;
+        document.getElementById('profileState').value = userProfile.state;
+        document.getElementById('profileZip').value = userProfile.zip;
+        document.getElementById('profilePhone').value = formatPhoneNumber(userProfile.phone);
         document.getElementById('profileEmail').value = userProfile.email;
-        
+
         // Load profile photo
         if (userProfile.photoData) {
             displayProfilePhoto(userProfile.photoData);
@@ -56,8 +62,11 @@ async function saveUserProfile() {
         const profileData = {
             first_name: document.getElementById('profileFirstName').value,
             last_name: document.getElementById('profileLastName').value,
-            address: document.getElementById('profileAddress').value,
-            phone: document.getElementById('profilePhone').value,
+            street: document.getElementById('profileStreet').value,
+            city: document.getElementById('profileCity').value,
+            state: document.getElementById('profileState').value,
+            zip: document.getElementById('profileZip').value,
+            phone: unformatPhoneNumber(document.getElementById('profilePhone').value),
             photo_data: profilePhotoData
         };
 
@@ -69,7 +78,7 @@ async function saveUserProfile() {
         showProfileStatusMessage('Profile saved successfully!', 'success');
         profilePhotoData = null;
         await loadUserProfile(); // Reload from database
-        
+
         // Auto-close modal after successful save
         setTimeout(() => {
             closeProfileModal();
@@ -78,7 +87,7 @@ async function saveUserProfile() {
         showProfileStatusMessage('Error saving profile: ' + error.message, 'error');
         console.error('Profile save error:', error);
     }
-    
+
     // Update header if needed (could show user name)
     updateHeaderWithProfile();
 }
@@ -282,4 +291,46 @@ async function deleteAccount() {
     } catch (error) {
         showProfileStatusMessage(error.message || 'Failed to delete account.', 'error');
     }
+}
+
+// Phone number formatting functions
+function formatPhoneNumber(phoneNumber) {
+    if (!phoneNumber) return '';
+
+    // Remove all non-digit characters
+    const cleaned = phoneNumber.replace(/\D/g, '');
+
+    // Apply formatting based on length
+    if (cleaned.length === 10) {
+        return `(${cleaned.slice(0, 3)}) ${cleaned.slice(3, 6)}-${cleaned.slice(6)}`;
+    } else if (cleaned.length === 11 && cleaned[0] === '1') {
+        return `+1 (${cleaned.slice(1, 4)}) ${cleaned.slice(4, 7)}-${cleaned.slice(7)}`;
+    }
+
+    return phoneNumber; // Return original if it doesn't match expected formats
+}
+
+function unformatPhoneNumber(formattedPhone) {
+    if (!formattedPhone) return '';
+    // Remove all non-digit characters for storage
+    return formattedPhone.replace(/\D/g, '');
+}
+
+function handlePhoneNumberInput(event) {
+    const input = event.target;
+    const cursorPosition = input.selectionStart;
+    const originalLength = input.value.length;
+
+    // Format the phone number
+    input.value = formatPhoneNumber(input.value);
+
+    // Adjust cursor position after formatting
+    const newLength = input.value.length;
+    const lengthDiff = newLength - originalLength;
+    const newCursorPosition = cursorPosition + lengthDiff;
+
+    // Set cursor position (with some delay to ensure it's applied)
+    setTimeout(() => {
+        input.setSelectionRange(newCursorPosition, newCursorPosition);
+    }, 0);
 }

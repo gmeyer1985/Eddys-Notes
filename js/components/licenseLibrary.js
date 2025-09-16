@@ -9,6 +9,7 @@ function showLicenseLibraryModal() {
     modal.style.display = 'block';
     renderLicenses();
     updateStateFilter();
+    updateLicenseStatistics();
 }
 
 function closeLicenseLibraryModal() {
@@ -61,6 +62,30 @@ async function saveFishingLicense(licenseData) {
     }
 }
 
+async function updateFishingLicense(licenseData) {
+    try {
+        const data = {
+            state: licenseData.state,
+            type: licenseData.type,
+            start_date: licenseData.startDate,
+            end_date: licenseData.endDate,
+            notifications: licenseData.notifications,
+            document_data: licenseData.documentData,
+            document_type: licenseData.documentType
+        };
+
+        const result = await apiRequest(`/licenses/${licenseData.id}`, {
+            method: 'PUT',
+            body: JSON.stringify(data)
+        });
+
+        return result;
+    } catch (error) {
+        console.error('Error updating license:', error);
+        throw error;
+    }
+}
+
 async function deleteFishingLicense(licenseId) {
     try {
         await apiRequest(`/licenses/${licenseId}`, { method: 'DELETE' });
@@ -71,17 +96,27 @@ async function deleteFishingLicense(licenseId) {
 }
 
 function showAddLicenseForm() {
+    editingLicenseIndex = null;
     document.getElementById('addLicenseForm').style.display = 'block';
     document.getElementById('licenseForm').reset();
     resetLicenseDocumentPreview();
     currentLicenseDocument = null;
+
+    // Reset form title and button text for adding
+    document.querySelector('#addLicenseForm h3').textContent = 'Add New Fishing License';
+    document.querySelector('#licenseForm button[type="submit"]').textContent = 'Save License';
 }
 
 function cancelAddLicense() {
+    editingLicenseIndex = null;
     document.getElementById('addLicenseForm').style.display = 'none';
     document.getElementById('licenseForm').reset();
     resetLicenseDocumentPreview();
     currentLicenseDocument = null;
+
+    // Reset form title and button text
+    document.querySelector('#addLicenseForm h3').textContent = 'Add New Fishing License';
+    document.querySelector('#licenseForm button[type="submit"]').textContent = 'Save License';
 }
 
 function updateStateFilter() {
@@ -102,44 +137,90 @@ function updateStateFilter() {
     }
 }
 
-function filterLicensesByState() {
-    var selectedState = document.getElementById('stateFilter').value;
-    renderLicenses(selectedState);
-}
 
-function renderLicenses(filterState) {
+function renderLicenses(filterState, searchTerm) {
     var container = document.getElementById('licenseContainer');
-    
+
     if (!container) return;
-    
-    var filteredLicenses = filterState ? 
-        fishingLicenses.filter(function(license) { return license.state === filterState; }) : 
-        fishingLicenses;
-    
+
+    var filteredLicenses = fishingLicenses;
+
+    // Apply state filter
+    if (filterState) {
+        filteredLicenses = filteredLicenses.filter(function(license) {
+            return license.state === filterState;
+        });
+    }
+
+    // Apply search filter
+    if (searchTerm) {
+        var searchLower = searchTerm.toLowerCase();
+        filteredLicenses = filteredLicenses.filter(function(license) {
+            return license.state.toLowerCase().includes(searchLower) ||
+                   (license.type && license.type.toLowerCase().includes(searchLower)) ||
+                   license.startDate.includes(searchTerm) ||
+                   license.endDate.includes(searchTerm);
+        });
+    }
+
     if (filteredLicenses.length === 0) {
-        var message = filterState ? 
-            'No licenses found for ' + filterState + '.' : 
-            'No licenses added yet.';
+        var message = 'No licenses found matching your criteria.';
+        if (filterState && searchTerm) {
+            message = 'No licenses found for "' + searchTerm + '" in ' + filterState + '.';
+        } else if (filterState) {
+            message = 'No licenses found for ' + filterState + '.';
+        } else if (searchTerm) {
+            message = 'No licenses found matching "' + searchTerm + '".';
+        } else {
+            message = 'No licenses added yet.';
+        }
         container.innerHTML = '<p style="text-align: center; color: rgba(255, 255, 255, 0.6);">' + message + '</p>';
         return;
     }
-    
+
     var html = '';
     filteredLicenses.forEach(function(license, index) {
         html += createLicenseCard(license, fishingLicenses.indexOf(license));
     });
-    
+
     container.innerHTML = html;
 }
 
+function searchLicenses() {
+    var searchTerm = document.getElementById('licenseSearch').value;
+    var filterState = document.getElementById('stateFilter').value;
+    renderLicenses(filterState, searchTerm);
+}
+
+function filterLicensesByState() {
+    var selectedState = document.getElementById('stateFilter').value;
+    var searchTerm = document.getElementById('licenseSearch').value;
+    renderLicenses(selectedState, searchTerm);
+}
+
 function createLicenseCard(license, index) {
-    var isExpiringSoon = isLicenseExpiringSoon(license.endDate);
-    var daysUntilExpiration = getDaysUntilExpiration(license.endDate);
-    var cardClass = isExpiringSoon ? 'license-card expiring-soon' : 'license-card';
-    
+    var expirationStatus = getLicenseExpirationStatus(license.endDate);
+    var cardClass = 'license-card';
+
     var notificationHtml = '';
-    if (isExpiringSoon && license.notifications) {
-        notificationHtml = '<span class="expiration-notification">Expires in ' + daysUntilExpiration + ' days!</span>';
+    var statusMessage = '';
+
+    if (expirationStatus.status === 'expired') {
+        statusMessage = 'Expired ' + expirationStatus.days + ' days ago';
+        cardClass += ' expired';
+    } else if (expirationStatus.status === 'critical') {
+        statusMessage = 'Expires in ' + expirationStatus.days + ' days - URGENT!';
+        cardClass += ' critical';
+    } else if (expirationStatus.status === 'warning') {
+        statusMessage = 'Expires in ' + expirationStatus.days + ' days';
+        cardClass += ' warning';
+    } else {
+        statusMessage = 'Valid for ' + expirationStatus.days + ' more days';
+        cardClass += ' valid';
+    }
+
+    if (license.notifications && expirationStatus.status !== 'valid') {
+        notificationHtml = '<span class="expiration-notification" style="background-color: ' + expirationStatus.bgColor + '; color: ' + expirationStatus.color + '; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; border: 1px solid ' + expirationStatus.color + '30;">' + statusMessage + '</span>';
     }
     
     var documentPreview = '';
@@ -172,12 +253,8 @@ function createLicenseCard(license, index) {
         '</div>' +
         (documentPreview ? '<div style="text-align: center; margin: 10px 0;">' + documentPreview + '</div>' : '') +
         '<div class="license-actions">' +
-            '<button class="icon-btn icon-btn-edit" onclick="editLicense(' + index + ')" title="Edit License">' +
-            '<i data-lucide="edit-3"></i>' +
-            '</button>' +
-            '<button class="icon-btn icon-btn-delete" onclick="deleteLicense(' + index + ')" title="Delete License">' +
-            '<i data-lucide="trash-2"></i>' +
-            '</button>' +
+            '<button class="btn btn-sm btn-success" onclick="editLicense(' + index + ')" title="Edit License" style="margin-right: 8px; padding: 6px 12px; font-size: 12px;">✏️ Edit</button>' +
+            '<button class="btn btn-sm btn-danger" onclick="deleteLicense(' + index + ')" title="Delete License" style="padding: 6px 12px; font-size: 12px;">🗑️ Delete</button>' +
         '</div>' +
     '</div>';
     
@@ -197,11 +274,49 @@ function isLicenseExpiringSoon(endDate) {
     return daysDiff <= 30 && daysDiff >= 0;
 }
 
+function getLicenseExpirationStatus(endDate) {
+    var today = new Date();
+    var expiration = new Date(endDate);
+    var timeDiff = expiration.getTime() - today.getTime();
+    var daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
+
+    if (daysDiff < 0) {
+        return { status: 'expired', days: Math.abs(daysDiff), color: '#F44336', bgColor: 'rgba(244, 67, 54, 0.2)' };
+    } else if (daysDiff <= 7) {
+        return { status: 'critical', days: daysDiff, color: '#F44336', bgColor: 'rgba(244, 67, 54, 0.2)' };
+    } else if (daysDiff <= 30) {
+        return { status: 'warning', days: daysDiff, color: '#FF9800', bgColor: 'rgba(255, 152, 0, 0.2)' };
+    } else {
+        return { status: 'valid', days: daysDiff, color: '#4CAF50', bgColor: 'rgba(76, 175, 80, 0.1)' };
+    }
+}
+
 function getDaysUntilExpiration(endDate) {
     var today = new Date();
     var expiration = new Date(endDate);
     var timeDiff = expiration.getTime() - today.getTime();
     return Math.ceil(timeDiff / (1000 * 3600 * 24));
+}
+
+function updateLicenseStatistics() {
+    var totalCount = fishingLicenses.length;
+    var expiringSoonCount = 0;
+    var expiredCount = 0;
+
+    fishingLicenses.forEach(function(license) {
+        var expirationStatus = getLicenseExpirationStatus(license.endDate);
+
+        if (expirationStatus.status === 'expired') {
+            expiredCount++;
+        } else if (expirationStatus.status === 'critical' || expirationStatus.status === 'warning') {
+            expiringSoonCount++;
+        }
+    });
+
+    // Update statistics display
+    document.getElementById('totalLicensesCount').textContent = totalCount;
+    document.getElementById('expiringSoonCount').textContent = expiringSoonCount;
+    document.getElementById('expiredCount').textContent = expiredCount;
 }
 
 function handleLicenseDocumentUpload(event) {
@@ -274,13 +389,13 @@ async function saveLicense() {
 
     var startDate = new Date(document.getElementById('licenseStartDate').value);
     var endDate = new Date(document.getElementById('licenseEndDate').value);
-    
+
     if (startDate >= endDate) {
         showLicenseStatusMessage('End date must be after start date.', 'error');
         return;
     }
 
-    var newLicense = {
+    var licenseData = {
         state: document.getElementById('licenseState').value,
         type: document.getElementById('licenseType').value || 'Fishing License',
         startDate: document.getElementById('licenseStartDate').value,
@@ -289,23 +404,60 @@ async function saveLicense() {
         documentData: currentLicenseDocument ? currentLicenseDocument.data : null,
         documentType: currentLicenseDocument ? currentLicenseDocument.type : null
     };
-    
+
     try {
-        await saveFishingLicense(newLicense);
+        if (editingLicenseIndex !== null) {
+            // Update existing license
+            var existingLicense = fishingLicenses[editingLicenseIndex];
+            licenseData.id = existingLicense.id;
+            await updateFishingLicense(licenseData);
+            showLicenseStatusMessage('License updated successfully!', 'success');
+        } else {
+            // Add new license
+            await saveFishingLicense(licenseData);
+            showLicenseStatusMessage('License added successfully!', 'success');
+        }
+
         await loadFishingLicenses(); // Reload from database
-        showLicenseStatusMessage('License added successfully!', 'success');
         cancelAddLicense();
         renderLicenses();
         updateStateFilter();
+        updateLicenseStatistics();
     } catch (error) {
         showLicenseStatusMessage('Error saving license: ' + error.message, 'error');
         console.error('License save error:', error);
     }
 }
 
+var editingLicenseIndex = null;
+
 function editLicense(index) {
-    // For now, just show alert - full edit functionality can be added later
-    alert('Edit functionality - coming soon!');
+    editingLicenseIndex = index;
+    var license = fishingLicenses[index];
+
+    // Show the form
+    showAddLicenseForm();
+
+    // Change form title and button text
+    document.querySelector('#addLicenseForm h3').textContent = 'Edit Fishing License';
+    document.querySelector('#licenseForm button[type="submit"]').textContent = 'Update License';
+
+    // Populate form with existing data
+    document.getElementById('licenseState').value = license.state;
+    document.getElementById('licenseType').value = license.type || '';
+    document.getElementById('licenseStartDate').value = license.startDate;
+    document.getElementById('licenseEndDate').value = license.endDate;
+    document.getElementById('enableNotifications').checked = license.notifications;
+
+    // Load existing document if available
+    if (license.documentData) {
+        currentLicenseDocument = {
+            data: license.documentData,
+            type: license.documentType,
+            name: 'Existing Document'
+        };
+        displayLicenseDocument();
+    }
 }
 
 async function deleteLicense(index) {
@@ -316,6 +468,7 @@ async function deleteLicense(index) {
             await loadFishingLicenses(); // Reload from database
             renderLicenses();
             updateStateFilter();
+            updateLicenseStatistics();
             showLicenseStatusMessage('License deleted.', 'success');
         } catch (error) {
             showLicenseStatusMessage('Error deleting license: ' + error.message, 'error');
@@ -336,59 +489,196 @@ function showLicenseStatusMessage(message, type) {
     }
 }
 
+var currentZoomLevel = 100;
+var currentDocumentPath = '';
+var currentDocumentType = '';
+
 function openDocument(documentPath, documentType) {
     if (!documentPath) {
         showLicenseStatusMessage('Document not available', 'error');
         return;
     }
-    
-    // For DNR wardens, open document in a new window/tab
-    var newWindow = window.open('', '_blank');
-    
+
+    currentDocumentPath = documentPath;
+    currentDocumentType = documentType;
+    currentZoomLevel = 100;
+
+    // Show the modal
+    var modal = document.getElementById('documentViewerModal');
+    var imageViewer = document.getElementById('documentViewerImage');
+    var pdfViewer = document.getElementById('documentViewerPdf');
+    var loading = document.getElementById('documentViewerLoading');
+    var title = document.getElementById('documentViewerTitle');
+    var typeLabel = document.getElementById('documentViewerType');
+    var zoomLevel = document.getElementById('documentZoomLevel');
+
+    // Reset viewers
+    imageViewer.style.display = 'none';
+    pdfViewer.style.display = 'none';
+    loading.style.display = 'block';
+
+    // Set title and type
+    title.textContent = 'Fishing License Document';
+    typeLabel.textContent = documentType.toUpperCase();
+    zoomLevel.textContent = '100%';
+
+    // Show modal
+    modal.style.display = 'block';
+
+    // Load document
     if (documentType === 'pdf') {
-        // For PDFs, show in iframe or direct link
-        newWindow.document.write(`
-            <html>
-                <head>
-                    <title>Fishing License Document</title>
-                    <style>
-                        body { margin: 0; padding: 20px; background: #f0f0f0; font-family: Arial, sans-serif; }
-                        iframe { width: 100%; height: 80vh; border: none; }
-                        .info { text-align: center; margin-bottom: 20px; }
-                    </style>
-                </head>
-                <body>
-                    <div class="info">
-                        <h2>Fishing License Document</h2>
-                        <p>Official license document for DNR verification</p>
-                    </div>
-                    <iframe src="${documentPath}"></iframe>
-                </body>
-            </html>
-        `);
+        pdfViewer.src = documentPath;
+        pdfViewer.onload = function() {
+            loading.style.display = 'none';
+            pdfViewer.style.display = 'block';
+        };
     } else {
-        // For images, show with zoom capability
-        newWindow.document.write(`
-            <html>
-                <head>
-                    <title>Fishing License Document</title>
-                    <style>
-                        body { margin: 0; padding: 20px; background: #000; text-align: center; }
-                        img { max-width: 100%; max-height: 90vh; cursor: zoom-in; }
-                        .info { color: white; margin-bottom: 20px; }
-                        .zoomed { cursor: zoom-out; max-width: none; max-height: none; }
-                    </style>
-                </head>
-                <body>
-                    <div class="info">
-                        <h2 style="color: white;">Fishing License Document</h2>
-                        <p style="color: white;">Click image to zoom. Official license document for DNR verification.</p>
-                    </div>
-                    <img src="${documentPath}" alt="License Document" onclick="this.classList.toggle('zoomed')">
-                </body>
-            </html>
-        `);
+        imageViewer.src = documentPath;
+        imageViewer.onload = function() {
+            loading.style.display = 'none';
+            imageViewer.style.display = 'block';
+            updateImageZoom();
+            addTouchGestures(imageViewer);
+        };
     }
-    
-    newWindow.document.close();
+}
+
+function closeDocumentViewer() {
+    var modal = document.getElementById('documentViewerModal');
+    modal.style.display = 'none';
+
+    // Reset
+    document.getElementById('documentViewerImage').src = '';
+    document.getElementById('documentViewerPdf').src = '';
+    currentZoomLevel = 100;
+}
+
+function updateImageZoom() {
+    var imageViewer = document.getElementById('documentViewerImage');
+    var zoomLevel = document.getElementById('documentZoomLevel');
+
+    if (currentDocumentType !== 'pdf') {
+        imageViewer.style.transform = `scale(${currentZoomLevel / 100})`;
+        imageViewer.style.cursor = currentZoomLevel < 200 ? 'zoom-in' : 'zoom-out';
+        zoomLevel.textContent = currentZoomLevel + '%';
+    }
+}
+
+// Add event listeners for zoom controls and keyboard support
+document.addEventListener('DOMContentLoaded', function() {
+    var zoomInBtn = document.getElementById('documentZoomIn');
+    var zoomOutBtn = document.getElementById('documentZoomOut');
+    var downloadBtn = document.getElementById('documentDownload');
+
+    // Keyboard support
+    document.addEventListener('keydown', function(event) {
+        var modal = document.getElementById('documentViewerModal');
+        if (modal && modal.style.display === 'block') {
+            if (event.key === 'Escape') {
+                closeDocumentViewer();
+            } else if (event.key === '=' || event.key === '+') {
+                if (currentZoomLevel < 200) {
+                    currentZoomLevel += 25;
+                    updateImageZoom();
+                }
+            } else if (event.key === '-') {
+                if (currentZoomLevel > 50) {
+                    currentZoomLevel -= 25;
+                    updateImageZoom();
+                }
+            }
+        }
+    });
+
+    if (zoomInBtn) {
+        zoomInBtn.addEventListener('click', function() {
+            if (currentZoomLevel < 200) {
+                currentZoomLevel += 25;
+                updateImageZoom();
+            }
+        });
+    }
+
+    if (zoomOutBtn) {
+        zoomOutBtn.addEventListener('click', function() {
+            if (currentZoomLevel > 50) {
+                currentZoomLevel -= 25;
+                updateImageZoom();
+            }
+        });
+    }
+
+    if (downloadBtn) {
+        downloadBtn.addEventListener('click', function() {
+            if (currentDocumentPath) {
+                var link = document.createElement('a');
+                link.href = currentDocumentPath;
+                link.download = 'license-document.' + (currentDocumentType === 'pdf' ? 'pdf' : 'jpg');
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+        });
+    }
+});
+
+// Mobile touch gestures for image viewer
+function addTouchGestures(imageElement) {
+    if (!('ontouchstart' in window)) return; // Skip if not touch device
+
+    let initialDistance = 0;
+    let initialZoom = currentZoomLevel;
+    let isPinching = false;
+
+    imageElement.addEventListener('touchstart', function(e) {
+        if (e.touches.length === 2) {
+            isPinching = true;
+            initialDistance = getTouchDistance(e.touches[0], e.touches[1]);
+            initialZoom = currentZoomLevel;
+            e.preventDefault();
+        }
+    }, { passive: false });
+
+    imageElement.addEventListener('touchmove', function(e) {
+        if (isPinching && e.touches.length === 2) {
+            const currentDistance = getTouchDistance(e.touches[0], e.touches[1]);
+            const scaleChange = currentDistance / initialDistance;
+            let newZoom = Math.round(initialZoom * scaleChange);
+
+            // Constrain zoom level
+            newZoom = Math.max(50, Math.min(200, newZoom));
+
+            if (newZoom !== currentZoomLevel) {
+                currentZoomLevel = newZoom;
+                updateImageZoom();
+            }
+            e.preventDefault();
+        }
+    }, { passive: false });
+
+    imageElement.addEventListener('touchend', function(e) {
+        if (e.touches.length < 2) {
+            isPinching = false;
+        }
+    });
+
+    // Double tap to reset zoom
+    let lastTap = 0;
+    imageElement.addEventListener('touchend', function(e) {
+        const currentTime = new Date().getTime();
+        const tapLength = currentTime - lastTap;
+        if (tapLength < 500 && tapLength > 0 && !isPinching) {
+            // Double tap detected
+            currentZoomLevel = currentZoomLevel === 100 ? 150 : 100;
+            updateImageZoom();
+            e.preventDefault();
+        }
+        lastTap = currentTime;
+    });
+}
+
+function getTouchDistance(touch1, touch2) {
+    const dx = touch1.clientX - touch2.clientX;
+    const dy = touch1.clientY - touch2.clientY;
+    return Math.sqrt(dx * dx + dy * dy);
 }

@@ -319,18 +319,33 @@
                     </div>
                     
                     <div class="form-group full-width">
-                        <label for="profileAddress">Address</label>
-                        <textarea id="profileAddress" rows="3" placeholder="Enter your address"></textarea>
+                        <label for="profileStreet">Street Address</label>
+                        <input type="text" id="profileStreet" placeholder="Enter your street address">
                     </div>
-                    
+
+                    <div class="form-group">
+                        <label for="profileCity">City</label>
+                        <input type="text" id="profileCity" placeholder="Enter your city">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="profileState">State</label>
+                        <input type="text" id="profileState" placeholder="Enter your state">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="profileZip">ZIP Code</label>
+                        <input type="text" id="profileZip" placeholder="Enter your ZIP code">
+                    </div>
+
                     <div class="form-group">
                         <label for="profilePhone">Phone Number</label>
                         <input type="tel" id="profilePhone" placeholder="(555) 123-4567">
                     </div>
-                    
+
                     <div class="form-group">
                         <label for="profileEmail">Email Address</label>
-                        <input type="email" id="profileEmail" placeholder="your@email.com" readonly style="background-color: #2a2a2a; cursor: not-allowed;">
+                        <input type="email" id="profileEmail" placeholder="your@email.com" readonly style="background-color: white; color: #333; cursor: not-allowed;">
                         <small style="color: #888; font-size: 12px; margin-top: 5px; display: block;">Email cannot be changed</small>
                     </div>
                     
@@ -438,14 +453,36 @@
             <span class="close" onclick="closeLicenseLibraryModal()">&times;</span>
             <h2>License Library</h2>
             <div class="status-message" id="licenseStatusMessage"></div>
-            
+
+            <!-- Statistics Dashboard -->
+            <div class="license-stats-dashboard" id="licenseStatsBoard" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 25px; padding: 20px; background: rgba(139, 69, 19, 0.1); border-radius: 8px; border: 1px solid rgba(139, 69, 19, 0.3);">
+                <div class="stat-card" style="text-align: center; padding: 15px; background: rgba(76, 175, 80, 0.1); border-radius: 6px; border: 1px solid rgba(76, 175, 80, 0.3);">
+                    <div style="font-size: 24px; font-weight: bold; color: #4CAF50;" id="totalLicensesCount">0</div>
+                    <div style="font-size: 14px; color: #888; margin-top: 5px;">Total Licenses</div>
+                </div>
+                <div class="stat-card" style="text-align: center; padding: 15px; background: rgba(255, 193, 7, 0.1); border-radius: 6px; border: 1px solid rgba(255, 193, 7, 0.3);">
+                    <div style="font-size: 24px; font-weight: bold; color: #FFC107;" id="expiringSoonCount">0</div>
+                    <div style="font-size: 14px; color: #888; margin-top: 5px;">Expiring Soon (30 days)</div>
+                </div>
+                <div class="stat-card" style="text-align: center; padding: 15px; background: rgba(244, 67, 54, 0.1); border-radius: 6px; border: 1px solid rgba(244, 67, 54, 0.3);">
+                    <div style="font-size: 24px; font-weight: bold; color: #F44336;" id="expiredCount">0</div>
+                    <div style="font-size: 14px; color: #888; margin-top: 5px;">Expired</div>
+                </div>
+            </div>
+
             <!-- Controls -->
             <div class="license-controls" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
-                <div style="display: flex; gap: 10px; align-items: center;">
-                    <label for="stateFilter" style="margin: 0;">Filter by State:</label>
-                    <select id="stateFilter" onchange="filterLicensesByState()" style="min-width: 120px;">
-                        <option value="">All States</option>
-                    </select>
+                <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
+                    <div style="display: flex; gap: 5px; align-items: center;">
+                        <label for="licenseSearch" style="margin: 0; white-space: nowrap;">Search:</label>
+                        <input type="text" id="licenseSearch" placeholder="Search licenses..." style="padding: 5px 10px; border: 1px solid rgba(139, 69, 19, 0.5); border-radius: 4px; background: white; color: #333; min-width: 180px;" oninput="searchLicenses()">
+                    </div>
+                    <div style="display: flex; gap: 5px; align-items: center;">
+                        <label for="stateFilter" style="margin: 0; white-space: nowrap;">Filter by State:</label>
+                        <select id="stateFilter" onchange="filterLicensesByState()" style="min-width: 120px;">
+                            <option value="">All States</option>
+                        </select>
+                    </div>
                 </div>
                 <button class="btn btn-success" onclick="showAddLicenseForm()">Add New License</button>
             </div>
@@ -565,6 +602,30 @@
             
             <div id="licenseContainer">
                 <!-- Licenses will be displayed here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Document Viewer Modal -->
+    <div id="documentViewerModal" class="modal">
+        <div class="modal-content" style="max-width: 90vw; max-height: 90vh; padding: 0; background: #000; border-radius: 8px; overflow: hidden;">
+            <div class="document-viewer-header" style="background: rgba(0,0,0,0.8); color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <h3 id="documentViewerTitle" style="margin: 0; font-size: 16px;">License Document</h3>
+                    <span id="documentViewerType" style="background: #333; padding: 2px 8px; border-radius: 4px; font-size: 12px; color: #ccc;"></span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <button id="documentZoomOut" class="btn btn-sm btn-secondary" style="padding: 4px 8px;">🔍−</button>
+                    <span id="documentZoomLevel" style="color: #ccc; font-size: 12px;">100%</span>
+                    <button id="documentZoomIn" class="btn btn-sm btn-secondary" style="padding: 4px 8px;">🔍+</button>
+                    <button id="documentDownload" class="btn btn-sm btn-primary" style="padding: 4px 8px;">📥 Download</button>
+                    <button class="btn btn-sm btn-danger" onclick="closeDocumentViewer()" style="padding: 4px 8px;">✕ Close</button>
+                </div>
+            </div>
+            <div class="document-viewer-content" style="position: relative; height: 70vh; overflow: auto; display: flex; align-items: center; justify-content: center; background: #111;">
+                <img id="documentViewerImage" src="" alt="License Document" style="display: none; max-width: 100%; max-height: 100%; object-fit: contain; cursor: grab; transition: transform 0.2s ease;">
+                <iframe id="documentViewerPdf" src="" style="display: none; width: 100%; height: 100%; border: none; background: white;"></iframe>
+                <div id="documentViewerLoading" style="color: #ccc; font-size: 14px;">Loading document...</div>
             </div>
         </div>
     </div>
