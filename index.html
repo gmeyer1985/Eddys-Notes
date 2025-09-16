@@ -249,7 +249,7 @@
                     <div class="form-grid">
                         <div class="form-group">
                             <label for="entryDate">Date *</label>
-                            <input type="date" id="entryDate" required>
+                            <input type="date" id="entryDate" required onchange="populateEnvironmentalData()">
                         </div>
 
                         <div class="form-group">
@@ -295,6 +295,31 @@
                             <label for="waterTemp">Water Temperature (°F)</label>
                             <input type="number" id="waterTemp" placeholder="65">
                         </div>
+                    </div>
+                </div>
+                <!-- Environmental Conditions -->
+                <div class="form-section">
+                    <h3 class="section-title">🌤️ Environmental Conditions</h3>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="airTemp">Air Temperature (°F)</label>
+                            <input type="number" id="airTemp" placeholder="Loading..." readonly>
+                        </div>
+                        <div class="form-group">
+                            <label for="barometricPressure">Barometric Pressure (inHg)</label>
+                            <input type="number" id="barometricPressure" step="0.01" placeholder="Loading..." readonly>
+                        </div>
+                        <div class="form-group">
+                            <label for="windSpeed">Wind Speed (mph)</label>
+                            <input type="number" id="windSpeed" placeholder="Loading..." readonly>
+                        </div>
+                        <div class="form-group">
+                            <label for="windDirection">Wind Direction</label>
+                            <input type="text" id="windDirection" placeholder="Loading..." readonly>
+                        </div>
+                    </div>
+                    <div class="weather-note">
+                        <small>Environmental data is automatically loaded based on date and location</small>
                     </div>
                 </div>
 

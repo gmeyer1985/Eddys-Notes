@@ -34,6 +34,17 @@ function applySmartDefaults() {
         entryDate.value = dateString;
     }
 
+    // Clear environmental data fields with loading state
+    var airTemp = document.getElementById('airTemp');
+    var barometricPressure = document.getElementById('barometricPressure');
+    var windSpeed = document.getElementById('windSpeed');
+    var windDirection = document.getElementById('windDirection');
+
+    if (airTemp) airTemp.value = '';
+    if (barometricPressure) barometricPressure.value = '';
+    if (windSpeed) windSpeed.value = '';
+    if (windDirection) windDirection.value = '';
+
     // Set current user as angler (if available from global user context)
     var anglerField = document.getElementById('angler');
     if (anglerField && !anglerField.value && typeof currentUser !== 'undefined' && currentUser) {
@@ -87,7 +98,11 @@ function editEntry(index) {
     var angler = document.getElementById('angler');
     var fliesUsed = document.getElementById('fliesUsed');
     var notes = document.getElementById('notes');
-    
+    var airTemp = document.getElementById('airTemp');
+    var barometricPressure = document.getElementById('barometricPressure');
+    var windSpeed = document.getElementById('windSpeed');
+    var windDirection = document.getElementById('windDirection');
+
     if (entryDate) entryDate.value = entry.date || '';
     if (cityState) cityState.value = entry.cityState || '';
     if (selectedLat) selectedLat.value = entry.latitude || '';
@@ -97,6 +112,10 @@ function editEntry(index) {
     if (waterTemp) waterTemp.value = entry.waterTemp || '';
     if (waterFlow) waterFlow.value = entry.waterFlow || '';
     if (targetSpecies) targetSpecies.value = entry.targetSpecies || '';
+    if (airTemp) airTemp.value = entry.weatherTemp || '';
+    if (barometricPressure) barometricPressure.value = entry.barometricPressure || '';
+    if (windSpeed) windSpeed.value = entry.windSpeed || '';
+    if (windDirection) windDirection.value = entry.windDirection || '';
     if (angler) angler.value = entry.angler || '';
     if (fliesUsed) fliesUsed.value = entry.fliesUsed || '';
     if (notes) notes.value = entry.notes || '';
@@ -145,6 +164,61 @@ async function deleteEntry(index) {
             console.error('Delete error:', error);
         }
     }
+}
+
+function populateEnvironmentalData() {
+    var date = document.getElementById('entryDate').value;
+    var cityState = document.getElementById('cityState').value;
+    var lat = document.getElementById('selectedLat').value || document.getElementById('fishingLat').value;
+    var lon = document.getElementById('selectedLon').value || document.getElementById('fishingLon').value;
+
+    // Reset fields to loading state
+    var airTemp = document.getElementById('airTemp');
+    var barometricPressure = document.getElementById('barometricPressure');
+    var windSpeed = document.getElementById('windSpeed');
+    var windDirection = document.getElementById('windDirection');
+
+    if (!date || (!lat || !lon)) {
+        // Clear fields if no date or location
+        if (airTemp) airTemp.value = '';
+        if (barometricPressure) barometricPressure.value = '';
+        if (windSpeed) windSpeed.value = '';
+        if (windDirection) windDirection.value = '';
+        return;
+    }
+
+    // Set loading state
+    if (airTemp) airTemp.placeholder = 'Loading...';
+    if (barometricPressure) barometricPressure.placeholder = 'Loading...';
+    if (windSpeed) windSpeed.placeholder = 'Loading...';
+    if (windDirection) windDirection.placeholder = 'Loading...';
+
+    // Fetch weather data
+    getWeatherData(lat, lon, date, cityState).then(function(weatherData) {
+        if (airTemp) {
+            airTemp.value = weatherData.airTemp || '';
+            airTemp.placeholder = weatherData.airTemp ? '' : 'N/A';
+        }
+        if (barometricPressure) {
+            barometricPressure.value = weatherData.barometricPressure || '';
+            barometricPressure.placeholder = weatherData.barometricPressure ? '' : 'N/A';
+        }
+        if (windSpeed) {
+            windSpeed.value = weatherData.windSpeed || '';
+            windSpeed.placeholder = weatherData.windSpeed ? '' : 'N/A';
+        }
+        if (windDirection) {
+            windDirection.value = weatherData.windDirection || '';
+            windDirection.placeholder = weatherData.windDirection ? '' : 'N/A';
+        }
+    }).catch(function(error) {
+        console.error('Error fetching weather data:', error);
+        // Set N/A placeholders on error
+        if (airTemp) airTemp.placeholder = 'N/A';
+        if (barometricPressure) barometricPressure.placeholder = 'N/A';
+        if (windSpeed) windSpeed.placeholder = 'N/A';
+        if (windDirection) windDirection.placeholder = 'N/A';
+    });
 }
 
 function closeModal() {
@@ -228,10 +302,10 @@ async function saveEntryWithData(weatherData, moonPhase, cityState, date) {
         longitude: document.getElementById('fishingLon').value || document.getElementById('selectedLon').value,
         startTime: document.getElementById('startTime').value,
         endTime: document.getElementById('endTime').value,
-        weatherTemp: weatherData.airTemp,
-        barometricPressure: weatherData.barometricPressure,
-        windSpeed: weatherData.windSpeed,
-        windDirection: weatherData.windDirection,
+        weatherTemp: document.getElementById('airTemp').value || weatherData.airTemp,
+        barometricPressure: document.getElementById('barometricPressure').value || weatherData.barometricPressure,
+        windSpeed: document.getElementById('windSpeed').value || weatherData.windSpeed,
+        windDirection: document.getElementById('windDirection').value || weatherData.windDirection,
         moonPhase: moonPhase,
         riverName: document.getElementById('riverSearch').value,
         siteNumber: document.getElementById('selectedSiteNumber').value,

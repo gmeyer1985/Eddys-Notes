@@ -33,19 +33,24 @@ function dropFishingPin(lat, lon) {
     if (currentMarker) {
         fishingLocationMap.removeLayer(currentMarker);
     }
-    
+
     // Add new marker
     currentMarker = L.marker([lat, lon]).addTo(fishingLocationMap);
-    
+
     // Save coordinates to hidden fields
     document.getElementById('fishingLat').value = lat.toFixed(6);
     document.getElementById('fishingLon').value = lon.toFixed(6);
-    
+
     // Get address from coordinates (reverse geocoding)
     reverseGeocode(lat, lon);
-    
+
     // Add popup with coordinates
     currentMarker.bindPopup('Fishing Location<br>Lat: ' + lat.toFixed(6) + '<br>Lon: ' + lon.toFixed(6)).openPopup();
+
+    // Populate environmental data with new coordinates
+    if (typeof populateEnvironmentalData === 'function') {
+        populateEnvironmentalData();
+    }
 }
 
 function reverseGeocode(lat, lon) {
@@ -150,7 +155,12 @@ function selectCityState(lat, lon, cityStateName) {
     document.getElementById('selectedLat').value = lat;
     document.getElementById('selectedLon').value = lon;
     document.getElementById('cityStateResults').style.display = 'none';
-    
+
     // Center map on selected location
     centerMapOnLocation(parseFloat(lat), parseFloat(lon));
+
+    // Populate environmental data with new coordinates
+    if (typeof populateEnvironmentalData === 'function') {
+        populateEnvironmentalData();
+    }
 }

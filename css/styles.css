@@ -3069,3 +3069,32 @@
                 width: 100%;
             }
         }
+
+        /* Environmental Data Section Styling */
+        .weather-note {
+            margin-top: 10px;
+            text-align: center;
+            color: rgba(255, 255, 255, 0.7);
+            font-style: italic;
+        }
+
+        .form-section h3.section-title {
+            color: #CD853F;
+            border-bottom: 2px solid rgba(205, 133, 63, 0.3);
+            padding-bottom: 8px;
+            margin-bottom: 15px;
+        }
+
+        #airTemp, #barometricPressure, #windSpeed, #windDirection {
+            background-color: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(139, 69, 19, 0.5);
+            color: #f0f0f0;
+            cursor: not-allowed;
+        }
+
+        #airTemp:focus, #barometricPressure:focus, #windSpeed:focus, #windDirection:focus {
+            background-color: rgba(0, 0, 0, 0.4);
+            border-color: #CD853F;
+            outline: none;
+            box-shadow: 0 0 5px rgba(205, 133, 63, 0.5);
+        }
