@@ -80,7 +80,17 @@ function applySmartDefaults() {
 function editEntry(index) {
     currentEditIndex = index;
     var entry = fishingData[index];
-    
+
+    console.log('editEntry called with index:', index);
+    console.log('fishingData length:', fishingData.length);
+    console.log('entry data:', entry);
+
+    if (!entry) {
+        console.error('No entry found at index:', index);
+        alert('Error: Unable to load entry data for editing.');
+        return;
+    }
+
     var modalTitle = document.getElementById('modalTitle');
     var entryModal = document.getElementById('entryModal');
     
