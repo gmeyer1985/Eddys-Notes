@@ -27,21 +27,31 @@ function getWeatherData(lat, lon, date, cityState) {
     return new Promise(function(resolve, reject) {
         // Check if API key is configured
         if (OPENWEATHER_API_KEY === 'YOUR_API_KEY_HERE') {
-            // Fallback to simulated data if no API key
-            return getSimulatedWeatherData(lat, lon, date, cityState).then(resolve).catch(reject);
+            reject(new Error('Weather API key not configured. Cannot retrieve weather data.'));
+            return;
         }
         
         var dateObj = new Date(date);
         var timestamp = Math.floor(dateObj.getTime() / 1000);
-        
-        // OpenWeatherMap API using coordinates instead of zipcode
-        var url = 'https://api.openweathermap.org/data/2.5/weather?lat=' + lat + '&lon=' + lon + '&appid=' + OPENWEATHER_API_KEY + '&units=imperial';
+        var currentTime = Math.floor(Date.now() / 1000);
+        var daysDiff = Math.floor((currentTime - timestamp) / (24 * 60 * 60));
+
+        // Check if date is historical (more than 1 day ago)
+        if (daysDiff > 1) {
+            // Use historical weather API for dates more than 1 day ago
+            var url = 'https://api.openweathermap.org/data/2.5/onecall/timemachine?lat=' + lat + '&lon=' + lon + '&dt=' + timestamp + '&appid=' + OPENWEATHER_API_KEY + '&units=imperial';
+            console.log('Using historical weather API for date:', date, 'timestamp:', timestamp);
+        } else {
+            // Use current weather API for today or yesterday
+            var url = 'https://api.openweathermap.org/data/2.5/weather?lat=' + lat + '&lon=' + lon + '&appid=' + OPENWEATHER_API_KEY + '&units=imperial';
+            console.log('Using current weather API for recent date:', date);
+        }
         
         // Add timeout to the fetch request
         var controller = new AbortController();
         var timeoutId = setTimeout(() => {
             controller.abort();
-            console.log('Weather API request timed out, using simulated data');
+            console.log('Weather API request timed out');
         }, 8000); // 8 second timeout
         
         fetch(url, { signal: controller.signal })
@@ -54,24 +64,44 @@ function getWeatherData(lat, lon, date, cityState) {
                 return response.json();
             })
             .then(function(data) {
-                console.log('Weather data parsed successfully');
-                // Convert pressure from hPa to inHg (1 hPa = 0.02953 inHg)
-                var pressureInHg = data.main.pressure * 0.02953;
-                
-                resolve({
-                    airTemp: Math.round(data.main.temp),
-                    barometricPressure: Math.round(pressureInHg * 100) / 100, // 2 decimal places
-                    windDirection: getWindDirection(data.wind.deg),
-                    windSpeed: Math.round(data.wind.speed),
-                    location: data.name + ', ' + data.sys.country
-                });
+                console.log('Weather data parsed successfully', data);
+
+                var weatherData;
+                if (daysDiff > 1 && data.current) {
+                    // Historical weather API response format
+                    console.log('Parsing historical weather data');
+                    var pressureInHg = data.current.pressure * 0.02953;
+                    weatherData = {
+                        airTemp: Math.round(data.current.temp),
+                        barometricPressure: Math.round(pressureInHg * 100) / 100,
+                        windDirection: getWindDirection(data.current.wind_deg),
+                        windSpeed: Math.round(data.current.wind_speed),
+                        location: 'Historical Location (' + date + ')'
+                    };
+                } else if (data.main) {
+                    // Current weather API response format
+                    console.log('Parsing current weather data');
+                    var pressureInHg = data.main.pressure * 0.02953;
+                    weatherData = {
+                        airTemp: Math.round(data.main.temp),
+                        barometricPressure: Math.round(pressureInHg * 100) / 100,
+                        windDirection: getWindDirection(data.wind.deg),
+                        windSpeed: Math.round(data.wind.speed),
+                        location: data.name + ', ' + data.sys.country
+                    };
+                } else {
+                    console.error('Unexpected weather API response format:', data);
+                    throw new Error('Unexpected weather API response format');
+                }
+
+                console.log('Parsed weather data:', weatherData);
+                resolve(weatherData);
             })
             .catch(function(error) {
                 clearTimeout(timeoutId);
                 console.error('Weather API error:', error);
-                console.log('Falling back to simulated weather data');
-                // Fallback to simulated data on error
-                getSimulatedWeatherData(lat, lon, date, cityState).then(resolve).catch(reject);
+                console.log('Weather data unavailable for this date');
+                reject(new Error('Weather data unavailable: ' + error.message));
             });
     });
 }

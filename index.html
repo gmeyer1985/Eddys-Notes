@@ -138,32 +138,68 @@
             </h1>
         </div>
         
-        <div class="controls">
-            <div class="filter-group">
-                <label for="filterDate">Filter by Date:</label>
-                <input type="date" id="filterDate">
+        <!-- Statistics Summary Bar -->
+        <div class="stats-summary-bar" id="statsSummaryBar">
+            <div class="stats-item">
+                <span class="stats-number" id="entriesShown">0</span>
+                <span class="stats-label">of</span>
+                <span class="stats-number" id="entriesTotal">0</span>
+                <span class="stats-label">entries</span>
             </div>
-            <div class="filter-group">
-                <label for="filterAngler">Filter by Angler:</label>
-                <select id="filterAngler">
-                    <option value="">All Anglers</option>
-                </select>
+            <div class="stats-item" id="dateRangeStats" style="display: none;">
+                <span class="stats-label">📅</span>
+                <span class="stats-text" id="dateRangeText"></span>
             </div>
-            <div class="filter-group">
-                <label for="filterSpecies">Filter by Species:</label>
-                <select id="filterSpecies">
-                    <option value="">All Species</option>
-                </select>
+            <div class="stats-item" id="activeFiltersCount" style="display: none;">
+                <span class="stats-label">🔍</span>
+                <span class="stats-text" id="activeFiltersText">filters active</span>
             </div>
-            <div class="filter-group">
-                <label for="searchNotes">Search Notes:</label>
-                <input type="text" id="searchNotes" placeholder="Search in notes...">
+        </div>
+
+        <!-- Enhanced Filter Controls -->
+        <div class="filter-controls-container">
+            <!-- Primary Filters Card -->
+            <div class="filter-card">
+                <div class="filter-card-header">
+                    <h3 class="filter-card-title">📊 Quick Filters</h3>
+                </div>
+                <div class="filter-card-content">
+                    <div class="filter-grid">
+                        <div class="filter-item">
+                            <label for="filterDate">📅 Date</label>
+                            <input type="date" id="filterDate" class="filter-input">
+                        </div>
+                        <div class="filter-item">
+                            <label for="filterAngler">👤 Angler</label>
+                            <select id="filterAngler" class="filter-input">
+                                <option value="">All Anglers</option>
+                            </select>
+                        </div>
+                        <div class="filter-item">
+                            <label for="filterSpecies">🐟 Species</label>
+                            <select id="filterSpecies" class="filter-input">
+                                <option value="">All Species</option>
+                            </select>
+                        </div>
+                        <div class="filter-item filter-item-wide">
+                            <label for="searchNotes">🔍 Search Notes</label>
+                            <input type="text" id="searchNotes" placeholder="Search in notes..." class="filter-input">
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="filter-group">
-                <button class="btn btn-primary" onclick="clearFilters()">Clear Filters</button>
-            </div>
-            <div class="filter-group">
-                <button class="btn btn-success" onclick="showAddModal()">Add New Entry</button>
+
+            <!-- Action Buttons Card -->
+            <div class="filter-card">
+                <div class="filter-card-header">
+                    <h3 class="filter-card-title">⚡ Actions</h3>
+                </div>
+                <div class="filter-card-content">
+                    <div class="action-buttons">
+                        <button class="btn btn-primary btn-filter" onclick="clearFilters()">🗑️ Clear Filters</button>
+                        <button class="btn btn-success btn-filter" onclick="showAddModal()">➕ Add New Entry</button>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -174,7 +210,6 @@
                         <th>City, State</th>
                         <th>Date</th>
                         <th>Time on Water</th>
-                        <th>Location</th>
                         <th>Air Temp (°F)</th>
                         <th>Barometric Pressure (inHg)</th>
                         <th>Water Temp (°F)</th>
@@ -432,19 +467,61 @@
 
     <!-- River Flow Modal -->
     <div id="riverFlowModal" class="modal">
-        <div class="modal-content" style="max-width: 800px;">
+        <div class="modal-content" style="max-width: 950px;">
             <span class="close" onclick="closeRiverFlowModal()">&times;</span>
-            <h2 id="riverFlowTitle">River Flow Monitor</h2>
+            <h2 id="riverFlowTitle">🌊 River Flow Monitor</h2>
             <div class="status-message" id="riverFlowStatusMessage"></div>
-            
-            <!-- Search Section -->
-            <div class="river-search-section">
-                <h3 style="color: #CD853F; margin-bottom: 15px; font-size: 1.2rem;">Add New River</h3>
+
+            <!-- Dashboard Statistics -->
+            <div class="river-stats-dashboard" id="riverStatsBoard">
+                <div class="stat-card river-stat-card">
+                    <div class="stat-icon">🏞️</div>
+                    <div class="stat-content">
+                        <div class="stat-number" id="totalRiversCount">0</div>
+                        <div class="stat-label">Rivers Monitored</div>
+                    </div>
+                </div>
+                <div class="stat-card river-stat-card">
+                    <div class="stat-icon">💧</div>
+                    <div class="stat-content">
+                        <div class="stat-number" id="avgFlowRate">- CFS</div>
+                        <div class="stat-label">Average Flow</div>
+                    </div>
+                </div>
+                <div class="stat-card river-stat-card">
+                    <div class="stat-icon">⚠️</div>
+                    <div class="stat-content">
+                        <div class="stat-number" id="flowAlertsCount">0</div>
+                        <div class="stat-label">Flow Alerts</div>
+                    </div>
+                </div>
+                <div class="stat-card river-stat-card">
+                    <div class="stat-icon">🔄</div>
+                    <div class="stat-content">
+                        <div class="stat-number" id="lastUpdateTime">-</div>
+                        <div class="stat-label">Last Updated</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions Bar -->
+            <div class="river-actions-bar">
+                <button class="btn btn-primary river-action-btn" onclick="refreshAllRivers();">🔄 Refresh All</button>
+                <button class="btn btn-secondary river-action-btn" onclick="showAddRiverSection();">➕ Add River</button>
+                <button class="btn btn-info river-action-btn" onclick="showFlowComparison();">📊 Compare Flows</button>
+            </div>
+
+            <!-- Search Section (Initially Hidden) -->
+            <div class="river-search-section" id="addRiverSection" style="display: none;">
+                <div class="section-header">
+                    <h3 class="section-title">🔍 Add New River</h3>
+                    <button class="btn btn-sm btn-secondary" onclick="hideAddRiverSection();">Cancel</button>
+                </div>
                 <div class="form-grid" style="grid-template-columns: 2fr 1fr;">
                     <div class="form-group">
                         <label for="riverFlowSearch">Search for River/Stream</label>
-                        <input type="text" id="riverFlowSearch" placeholder="Search for river or stream..." oninput="searchRiversForFlow()">
-                        <div id="riverFlowSearchResults" style="display: none; max-height: 150px; overflow-y: auto; border: 1px solid rgba(139, 69, 19, 0.5); border-radius: 4px; margin-top: 5px; background: rgba(0, 0, 0, 0.8);"></div>
+                        <input type="text" id="riverFlowSearch" placeholder="Search for river or stream..." oninput="searchRiversForFlow()" class="filter-input">
+                        <div id="riverFlowSearchResults" class="search-results"></div>
                     </div>
                     <div class="form-group">
                         <label>&nbsp;</label>
@@ -453,14 +530,23 @@
                 </div>
             </div>
 
-            <!-- Saved Rivers Section -->
-            <div class="saved-rivers-section" style="margin-top: 30px;">
-                <h3 style="color: #CD853F; margin-bottom: 15px; font-size: 1.2rem;">Saved Rivers</h3>
+            <!-- Enhanced Rivers Grid -->
+            <div class="rivers-grid-section">
+                <div class="section-header">
+                    <h3 class="section-title">📍 Your Rivers</h3>
+                    <div class="view-controls">
+                        <button class="btn btn-sm" onclick="toggleRiverView('grid')" id="gridViewBtn">⊞ Grid</button>
+                        <button class="btn btn-sm" onclick="toggleRiverView('list')" id="listViewBtn">☰ List</button>
+                    </div>
+                </div>
                 <div class="rivers-container" id="savedRiversContainer">
                     <div class="no-rivers-message" id="noRiversMessage">
-                        <p style="text-align: center; color: rgba(255, 255, 255, 0.6); font-style: italic; padding: 20px;">
-                            No rivers saved yet. Search and add rivers above to monitor their flow rates.
-                        </p>
+                        <div class="empty-state">
+                            <div class="empty-icon">🌊</div>
+                            <h4>No Rivers Added Yet</h4>
+                            <p>Start monitoring your favorite rivers by adding them above.</p>
+                            <button class="btn btn-primary" onclick="showAddRiverSection();">Add Your First River</button>
+                        </div>
                     </div>
                 </div>
             </div>

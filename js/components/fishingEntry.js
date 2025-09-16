@@ -90,8 +90,8 @@ function editEntry(index) {
     
     if (entryDate) entryDate.value = entry.date || '';
     if (cityState) cityState.value = entry.cityState || '';
-    if (selectedLat) selectedLat.value = entry.selectedLat || '';
-    if (selectedLon) selectedLon.value = entry.selectedLon || '';
+    if (selectedLat) selectedLat.value = entry.latitude || '';
+    if (selectedLon) selectedLon.value = entry.longitude || '';
     if (startTime) startTime.value = entry.startTime || '';
     if (endTime) endTime.value = entry.endTime || '';
     if (waterTemp) waterTemp.value = entry.waterTemp || '';
@@ -111,18 +111,18 @@ function editEntry(index) {
     var fishingLat = document.getElementById('fishingLat');
     var fishingLon = document.getElementById('fishingLon');
     var fishingAddress = document.getElementById('fishingAddress');
-    if (fishingLat) fishingLat.value = entry.fishingLat || '';
-    if (fishingLon) fishingLon.value = entry.fishingLon || '';
+    if (fishingLat) fishingLat.value = entry.latitude || '';
+    if (fishingLon) fishingLon.value = entry.longitude || '';
     if (fishingAddress) fishingAddress.value = entry.fishingAddress || '';
-    
+
     if (entryModal) entryModal.style.display = 'block';
-    
+
     // Initialize map and set existing location
     setTimeout(function() {
         initializeFishingLocationMap();
-        if (entry.fishingLat && entry.fishingLon) {
-            var lat = parseFloat(entry.fishingLat);
-            var lon = parseFloat(entry.fishingLon);
+        if (entry.latitude && entry.longitude) {
+            var lat = parseFloat(entry.latitude);
+            var lon = parseFloat(entry.longitude);
             fishingLocationMap.setView([lat, lon], 15);
             dropFishingPin(lat, lon);
             if (entry.fishingAddress) {
@@ -167,25 +167,53 @@ function saveEntry() {
     var lon = document.getElementById('selectedLon').value;
     var date = document.getElementById('entryDate').value;
     
-    // Use coordinates if available, otherwise fallback
-    if (lat && lon) {
+    // Use coordinates if available (check multiple sources for editing compatibility)
+    var hasCoordinates = (lat && lon) ||
+                        (document.getElementById('fishingLat').value && document.getElementById('fishingLon').value) ||
+                        (cityState && cityState.trim() !== '');
+
+    if (hasCoordinates && (lat && lon)) {
         getWeatherData(lat, lon, date, cityState).then(function(weatherData) {
             showStatusMessage('Weather data received, saving entry...', 'success');
             var moonPhase = getMoonPhase(date);
             var moonPhaseString = moonPhase.emoji + ' ' + moonPhase.name + ' (' + moonPhase.illumination + ')';
             saveEntryWithData(weatherData, moonPhaseString, cityState, date);
         }).catch(function(error) {
-            showStatusMessage('Weather API failed, using simulated data...', 'error');
+            showStatusMessage('Weather data unavailable for this date. Saving entry without weather data.', 'error');
             console.error('Weather API error:', error);
-            // Continue with simulated data
+            // Continue without weather data
             var moonPhase = getMoonPhase(date);
             var moonPhaseString = moonPhase.emoji + ' ' + moonPhase.name + ' (' + moonPhase.illumination + ')';
-            getSimulatedWeatherData(lat, lon, date, cityState).then(function(simulatedWeather) {
-                saveEntryWithData(simulatedWeather, moonPhaseString, cityState, date);
-            });
+
+            // Create empty weather data object
+            var emptyWeatherData = {
+                airTemp: null,
+                barometricPressure: null,
+                windDirection: null,
+                windSpeed: null,
+                location: cityState || 'Unknown Location'
+            };
+
+            saveEntryWithData(emptyWeatherData, moonPhaseString, cityState, date);
         });
+    } else if (hasCoordinates) {
+        // We have city info but no specific coordinates - save without weather data
+        showStatusMessage('No precise coordinates available. Saving entry without weather data.', 'error');
+        var moonPhase = getMoonPhase(date);
+        var moonPhaseString = moonPhase.emoji + ' ' + moonPhase.name + ' (' + moonPhase.illumination + ')';
+
+        // Create empty weather data object
+        var emptyWeatherData = {
+            airTemp: null,
+            barometricPressure: null,
+            windDirection: null,
+            windSpeed: null,
+            location: cityState || 'Unknown Location'
+        };
+
+        saveEntryWithData(emptyWeatherData, moonPhaseString, cityState, date);
     } else {
-        showStatusMessage('Please select a city from the dropdown first.', 'error');
+        showStatusMessage('Please enter a city/state or select from the dropdown.', 'error');
         return;
     }
 }
@@ -219,22 +247,28 @@ async function saveEntryWithData(weatherData, moonPhase, cityState, date) {
 
     try {
         if (currentEditIndex >= 0) {
-            // For now, we'll treat updates as new entries since we need to implement update API
-            showStatusMessage('Updating existing entries not yet supported. Creating new entry.', 'error');
+            // Update existing entry
+            console.log('Updating existing entry at index:', currentEditIndex);
+            await updateFishingEntry(fishingData[currentEditIndex].id, entry);
+            console.log('Entry updated successfully');
+            showStatusMessage('Entry updated successfully!', 'success');
+        } else {
+            // Create new entry
+            console.log('Calling saveFishingEntry...');
+            await saveFishingEntry(entry);
+            console.log('saveFishingEntry completed');
+            showStatusMessage('Entry saved successfully!', 'success');
         }
-        
-        console.log('Calling saveFishingEntry...');
-        await saveFishingEntry(entry);
-        console.log('saveFishingEntry completed, loading data...');
-        
+
+        console.log('Loading data...');
         await loadData(); // Reload data from database
         console.log('Data loaded, rendering table...');
-        
+
         renderTable();
         updateFilterOptions();
         closeModal();
-        showStatusMessage('Entry saved successfully!', 'success');
-        console.log('Entry save process completed successfully');
+        currentEditIndex = -1; // Reset edit index
+        console.log('Entry save/update process completed successfully');
     } catch (error) {
         showStatusMessage('Error saving entry: ' + error.message, 'error');
         console.error('Save error:', error);
@@ -253,6 +287,58 @@ function showStatusMessage(message, type) {
 function hideStatusMessage() {
     var statusDiv = document.getElementById('statusMessage');
     if (statusDiv) statusDiv.style.display = 'none';
+}
+
+function updateStatsBar() {
+    const entriesShown = document.getElementById('entriesShown');
+    const entriesTotal = document.getElementById('entriesTotal');
+    const dateRangeStats = document.getElementById('dateRangeStats');
+    const dateRangeText = document.getElementById('dateRangeText');
+    const activeFiltersCount = document.getElementById('activeFiltersCount');
+    const activeFiltersText = document.getElementById('activeFiltersText');
+
+    if (!entriesShown || !entriesTotal) return;
+
+    // Count visible entries
+    const visibleRows = document.querySelectorAll('#fishingTable tbody tr:not([style*="display: none"])');
+    const visibleCards = document.querySelectorAll('.entry-card:not([style*="display: none"])');
+    const shownCount = Math.max(visibleRows.length, visibleCards.length);
+
+    entriesShown.textContent = shownCount;
+    entriesTotal.textContent = fishingData.length;
+
+    // Check for date range
+    const filterDate = document.getElementById('filterDate');
+    if (filterDate && filterDate.value) {
+        const selectedDate = new Date(filterDate.value);
+        const formattedDate = selectedDate.toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric'
+        });
+        dateRangeText.textContent = formattedDate;
+        dateRangeStats.style.display = 'flex';
+    } else {
+        dateRangeStats.style.display = 'none';
+    }
+
+    // Count active filters
+    let activeFilters = 0;
+    const filterAngler = document.getElementById('filterAngler');
+    const filterSpecies = document.getElementById('filterSpecies');
+    const searchNotes = document.getElementById('searchNotes');
+
+    if (filterDate && filterDate.value) activeFilters++;
+    if (filterAngler && filterAngler.value) activeFilters++;
+    if (filterSpecies && filterSpecies.value) activeFilters++;
+    if (searchNotes && searchNotes.value.trim()) activeFilters++;
+
+    if (activeFilters > 0) {
+        activeFiltersText.textContent = `${activeFilters} filter${activeFilters > 1 ? 's' : ''} active`;
+        activeFiltersCount.style.display = 'flex';
+    } else {
+        activeFiltersCount.style.display = 'none';
+    }
 }
 
 function renderTable() {
@@ -338,7 +424,6 @@ function renderTable() {
         row.innerHTML = '<td>' + (entry.cityState || entry.zipcode || 'N/A') + '</td>' +
             '<td>' + new Date(entry.date).toLocaleDateString() + '</td>' +
             '<td>' + timeOnWater + '</td>' +
-            '<td>' + locationDisplay + '</td>' +
             '<td>' + (entry.weatherTemp || 'N/A') + '</td>' +
             '<td>' + (entry.barometricPressure || 'N/A') + '</td>' +
             '<td>' + (entry.waterTemp || 'N/A') + '</td>' +
@@ -445,6 +530,9 @@ function renderTable() {
     if (typeof lucide !== 'undefined') {
         lucide.createIcons();
     }
+
+    // Update statistics bar
+    updateStatsBar();
 }
 
 function updateFilterOptions() {
@@ -502,27 +590,47 @@ function applyFilters() {
     var anglerFilter = document.getElementById('filterAngler');
     var speciesFilter = document.getElementById('filterSpecies');
     var notesFilter = document.getElementById('searchNotes');
-    
+
     var dateValue = dateFilter ? dateFilter.value : '';
     var anglerValue = anglerFilter ? anglerFilter.value : '';
     var speciesValue = speciesFilter ? speciesFilter.value : '';
     var notesValue = notesFilter ? notesFilter.value.toLowerCase() : '';
-    
+
     var rows = document.querySelectorAll('#fishingTableBody tr');
-    
+    var cards = document.querySelectorAll('.entry-card');
+
+    // Filter table rows
     for (var i = 0; i < rows.length; i++) {
         var entry = fishingData[i];
         if (!entry) continue;
-        
+
         var show = true;
-        
+
         if (dateValue && entry.date !== dateValue) show = false;
         if (anglerValue && entry.angler !== anglerValue) show = false;
         if (speciesValue && entry.targetSpecies !== speciesValue) show = false;
         if (notesValue && (!entry.notes || entry.notes.toLowerCase().indexOf(notesValue) === -1)) show = false;
-        
+
         rows[i].style.display = show ? '' : 'none';
     }
+
+    // Filter mobile cards
+    for (var i = 0; i < cards.length; i++) {
+        var entry = fishingData[i];
+        if (!entry) continue;
+
+        var show = true;
+
+        if (dateValue && entry.date !== dateValue) show = false;
+        if (anglerValue && entry.angler !== anglerValue) show = false;
+        if (speciesValue && entry.targetSpecies !== speciesValue) show = false;
+        if (notesValue && (!entry.notes || entry.notes.toLowerCase().indexOf(notesValue) === -1)) show = false;
+
+        cards[i].style.display = show ? '' : 'none';
+    }
+
+    // Update statistics bar
+    updateStatsBar();
 }
 
 // Menu Action Functions

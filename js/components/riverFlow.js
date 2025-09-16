@@ -12,6 +12,9 @@ var savedRivers = [];
 var selectedRiver = null;
 var riverFlowSearchTimeout;
 
+// Alert configuration
+var flowAlerts = JSON.parse(localStorage.getItem('flowAlerts')) || {};
+
 // Popular rivers data
 var popularRivers = [
     {site_no: '05331000', site_name: 'Mississippi River at St. Paul, MN', state: 'MN'},
@@ -599,36 +602,196 @@ function displayFlowChart(hourlyData, riverName, date) {
 }
 
 // River Flow Modal Functions
-function showRiverFlowModal() {
-    loadSavedRivers();
+async function showRiverFlowModal() {
     var modal = document.getElementById('riverFlowModal');
     modal.style.display = 'block';
-    renderSavedRivers();
+
+    // Show loading state
+    var container = document.getElementById('savedRiversContainer');
+    if (container) {
+        container.innerHTML = '<div style="text-align: center; padding: 20px;">Loading rivers...</div>';
+    }
+
+    try {
+        await loadSavedRivers();
+        updateRiverDashboard();
+        renderSavedRivers();
+    } catch (error) {
+        console.error('Failed to load rivers:', error);
+        if (container) {
+            container.innerHTML = '<div style="text-align: center; padding: 20px; color: #e74c3c;">Failed to load rivers. Please try again.</div>';
+        }
+    }
 }
 
 function closeRiverFlowModal() {
     var modal = document.getElementById('riverFlowModal');
     modal.style.display = 'none';
     hideRiverFlowStatusMessage();
-    
+
     // Clear search
     document.getElementById('riverFlowSearch').value = '';
     document.getElementById('riverFlowSearchResults').style.display = 'none';
     selectedRiver = null;
 }
 
+// Enhanced Dashboard Functions
+function updateRiverDashboard() {
+    updateDashboardStats();
+    updateLastUpdateTime();
+}
+
+function updateDashboardStats() {
+    console.log('updateDashboardStats called, savedRivers length:', savedRivers.length);
+    var totalCount = savedRivers.length;
+    var flowValues = [];
+    var alertCount = 0;
+
+    // Calculate statistics
+    savedRivers.forEach(function(river) {
+        if (river.currentFlow && river.currentFlow !== 'No Data' && river.currentFlow !== 'Error') {
+            var flowValue = parseFloat(river.currentFlow.replace(' CFS', ''));
+            if (!isNaN(flowValue)) {
+                flowValues.push(flowValue);
+            }
+        }
+
+        // Count flow alerts (high, low, flood conditions)
+        var flowStatus = getFlowStatus(river.currentFlow);
+        if (flowStatus === 'high' || flowStatus === 'low' || flowStatus === 'flood') {
+            alertCount++;
+        }
+    });
+
+    // Calculate average flow
+    var avgFlow = '- CFS';
+    if (flowValues.length > 0) {
+        var sum = flowValues.reduce(function(a, b) { return a + b; }, 0);
+        var avg = Math.round(sum / flowValues.length);
+        avgFlow = avg + ' CFS';
+    }
+
+    // Update dashboard elements
+    document.getElementById('totalRiversCount').textContent = totalCount;
+    document.getElementById('avgFlowRate').textContent = avgFlow;
+    document.getElementById('flowAlertsCount').textContent = alertCount;
+}
+
+function updateLastUpdateTime() {
+    var now = new Date();
+    var timeString = now.toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+    });
+    document.getElementById('lastUpdateTime').textContent = timeString;
+}
+
+function getFlowStatus(flowString) {
+    if (!flowString || flowString === 'No Data' || flowString === 'Error') {
+        return 'unknown';
+    }
+
+    var flowValue = parseFloat(flowString.replace(' CFS', ''));
+    if (isNaN(flowValue)) return 'unknown';
+
+    // Basic flow categorization (can be refined based on specific river data)
+    if (flowValue < 100) return 'low';
+    if (flowValue < 1000) return 'normal';
+    if (flowValue < 5000) return 'high';
+    return 'flood';
+}
+
+function getFlowTrend(river) {
+    // Placeholder for trend calculation - would need historical data
+    // For now, return random trend for demonstration
+    var trends = ['up', 'down', 'stable'];
+    return trends[Math.floor(Math.random() * trends.length)];
+}
+
+function getTrendDisplay(trend) {
+    switch(trend) {
+        case 'up': return { arrow: '↗', class: 'trend-up', text: 'Rising' };
+        case 'down': return { arrow: '↘', class: 'trend-down', text: 'Falling' };
+        case 'stable': return { arrow: '→', class: 'trend-stable', text: 'Stable' };
+        default: return { arrow: '—', class: 'trend-stable', text: 'Unknown' };
+    }
+}
+
+// UI Control Functions
+function showAddRiverSection() {
+    document.getElementById('addRiverSection').style.display = 'block';
+    document.getElementById('riverFlowSearch').focus();
+}
+
+function hideAddRiverSection() {
+    document.getElementById('addRiverSection').style.display = 'none';
+    document.getElementById('riverFlowSearch').value = '';
+    document.getElementById('riverFlowSearchResults').style.display = 'none';
+}
+
+function toggleRiverView(viewType) {
+    var container = document.getElementById('savedRiversContainer');
+    var gridBtn = document.getElementById('gridViewBtn');
+    var listBtn = document.getElementById('listViewBtn');
+
+    if (viewType === 'list') {
+        container.classList.add('list-view');
+        listBtn.classList.add('btn-primary');
+        listBtn.classList.remove('btn-secondary');
+        gridBtn.classList.add('btn-secondary');
+        gridBtn.classList.remove('btn-primary');
+    } else {
+        container.classList.remove('list-view');
+        gridBtn.classList.add('btn-primary');
+        gridBtn.classList.remove('btn-secondary');
+        listBtn.classList.add('btn-secondary');
+        listBtn.classList.remove('btn-primary');
+    }
+}
+
+function refreshAllRivers() {
+    showRiverFlowStatusMessage('Refreshing all rivers...', 'info');
+
+    var updatePromises = savedRivers.map(function(river, index) {
+        return new Promise(function(resolve) {
+            updateRiverFlowData(index);
+            setTimeout(resolve, 100); // Small delay between requests
+        });
+    });
+
+    Promise.all(updatePromises).then(function() {
+        updateRiverDashboard();
+        showRiverFlowStatusMessage('All rivers updated successfully!', 'success');
+    });
+}
+
+function showFlowComparison() {
+    // Placeholder for flow comparison feature
+    showRiverFlowStatusMessage('Flow comparison feature coming soon!', 'info');
+}
+
 // Rivers API Functions
 async function loadSavedRivers() {
     try {
+        console.log('Loading rivers from API...');
         const rivers = await apiRequest('/rivers');
-        savedRivers = rivers.map(river => ({
-            id: river.id,
-            siteNumber: river.site_number,
-            riverName: river.river_name,
-            location: river.location,
-            currentFlow: river.current_flow,
-            lastUpdated: river.last_updated
-        }));
+        console.log('Rivers API response:', rivers);
+
+        if (Array.isArray(rivers)) {
+            savedRivers = rivers.map(river => ({
+                id: river.id,
+                siteNumber: river.site_number,
+                riverName: river.river_name,
+                location: river.location,
+                currentFlow: river.current_flow,
+                lastUpdated: river.last_updated
+            }));
+            console.log('Mapped rivers:', savedRivers);
+        } else {
+            console.warn('Rivers API returned non-array:', rivers);
+            savedRivers = [];
+        }
     } catch (error) {
         console.error('Error loading rivers:', error);
         savedRivers = [];
@@ -765,11 +928,14 @@ async function addSelectedRiver() {
 }
 
 function renderSavedRivers() {
+    console.log('renderSavedRivers called, savedRivers:', savedRivers);
     var container = document.getElementById('savedRiversContainer');
     var noRiversMsg = document.getElementById('noRiversMessage');
-    
+
     if (savedRivers.length === 0) {
+        console.log('No rivers to display, showing no rivers message');
         if (noRiversMsg) noRiversMsg.style.display = 'block';
+        if (container) container.innerHTML = '';
         return;
     }
     
@@ -784,57 +950,143 @@ function renderSavedRivers() {
 }
 
 function createRiverCard(river, index) {
-    var lastUpdatedText = river.lastUpdated ? 
-        'Updated: ' + new Date(river.lastUpdated).toLocaleString() : 
+    var lastUpdatedText = river.lastUpdated ?
+        'Updated: ' + new Date(river.lastUpdated).toLocaleString() :
         'Never updated';
-        
+
+    // Calculate flow status and color
+    var flowValue = 0;
+    var statusText = 'No Data';
+    var statusClass = 'status-unknown';
+    var gaugePercentage = 0;
+
+    if (river.currentFlow && river.currentFlow !== 'No Data' && river.currentFlow !== 'Error') {
+        flowValue = parseFloat(river.currentFlow.replace(' CFS', ''));
+        if (!isNaN(flowValue)) {
+            if (flowValue < 100) {
+                statusText = 'Low';
+                statusClass = 'status-low';
+                gaugePercentage = Math.min((flowValue / 100) * 30, 30);
+            } else if (flowValue < 500) {
+                statusText = 'Normal';
+                statusClass = 'status-normal';
+                gaugePercentage = 30 + Math.min(((flowValue - 100) / 400) * 40, 40);
+            } else if (flowValue < 1000) {
+                statusText = 'High';
+                statusClass = 'status-high';
+                gaugePercentage = 70 + Math.min(((flowValue - 500) / 500) * 25, 25);
+            } else {
+                statusText = 'Flood';
+                statusClass = 'status-flood';
+                gaugePercentage = Math.min(95 + (flowValue - 1000) / 1000 * 5, 100);
+            }
+        }
+    }
+
+    // Generate trend indicator
+    var trendIcon = '→';
+    var trendClass = 'trend-stable';
+    if (river.trend) {
+        if (river.trend > 0) {
+            trendIcon = '↗';
+            trendClass = 'trend-rising';
+        } else if (river.trend < 0) {
+            trendIcon = '↘';
+            trendClass = 'trend-falling';
+        }
+    }
+
     return '<div class="river-card">' +
         '<div class="river-card-header">' +
-            '<h4 class="river-name">' + river.riverName + '</h4>' +
+            '<div class="river-title">' +
+                '<h4 class="river-name">' + river.riverName + '</h4>' +
+                '<span class="flow-status-badge ' + statusClass + '">' + statusText + '</span>' +
+            '</div>' +
             '<span class="river-site-number">Site: ' + river.siteNumber + '</span>' +
         '</div>' +
-        '<div class="river-flow-data">' +
-            '<div class="flow-metric">' +
-                '<span class="flow-value">' + (river.currentFlow || 'N/A') + '</span>' +
-                '<div class="flow-label">Current CFS</div>' +
-            '</div>' +
-            '<div class="flow-metric">' +
-                '<span class="flow-value" style="font-size: 1rem;">' + (river.flowStatus || 'Unknown') + '</span>' +
-                '<div class="flow-label">Status</div>' +
+        '<div class="river-flow-display">' +
+            '<div class="flow-gauge-container">' +
+                '<div class="flow-gauge">' +
+                    '<div class="gauge-fill" style="width: ' + gaugePercentage + '%"></div>' +
+                '</div>' +
+                '<div class="flow-main-metric">' +
+                    '<span class="flow-value">' + (river.currentFlow || 'N/A') + '</span>' +
+                    '<span class="flow-trend ' + trendClass + '">' + trendIcon + '</span>' +
+                '</div>' +
             '</div>' +
         '</div>' +
-        '<div class="river-actions">' +
-            '<button class="btn btn-primary" onclick="updateRiverFlowData(' + index + ')">Refresh</button>' +
-            '<button class="btn btn-primary" onclick="showRiverFlowGraph(' + index + ')">Graph</button>' +
-            '<button class="btn btn-danger" onclick="removeRiver(' + index + ')">Remove</button>' +
+        '<div class="river-card-actions">' +
+            '<button class="action-btn refresh-btn" onclick="updateRiverFlowData(' + index + ')" title="Refresh Data">' +
+                '<i class="icon-refresh">🔄</i>' +
+            '</button>' +
+            '<button class="action-btn graph-btn" onclick="showRiverFlowGraph(' + index + ')" title="View Graph">' +
+                '<i class="icon-graph">📊</i>' +
+            '</button>' +
+            '<button class="action-btn alert-btn" onclick="configureRiverAlerts(' + index + ')" title="Configure Alerts">' +
+                '<i class="icon-alert">🔔</i>' +
+            '</button>' +
+            '<button class="action-btn remove-btn" onclick="removeRiver(' + index + ')" title="Remove River">' +
+                '<i class="icon-remove">🗑️</i>' +
+            '</button>' +
         '</div>' +
-        '<div class="last-updated">' + lastUpdatedText + '</div>' +
+        '<div class="river-card-footer">' +
+            '<span class="last-updated">' + lastUpdatedText + '</span>' +
+        '</div>' +
     '</div>';
 }
 
 function updateRiverFlowData(index) {
     var river = savedRivers[index];
+    var previousFlow = river.currentFlow;
     river.flowStatus = 'Loading...';
     renderSavedRivers();
-    
+
     getFlowDataForDate(river.siteNumber, new Date().toISOString().split('T')[0])
         .then(function(flowData) {
             if (flowData && flowData.flowRate !== null) {
-                river.currentFlow = Math.round(flowData.flowRate) + ' CFS';
+                var newFlow = Math.round(flowData.flowRate);
+                river.currentFlow = newFlow + ' CFS';
                 river.flowStatus = 'Active';
                 river.lastUpdated = new Date().toISOString();
+
+                // Calculate trend if we have previous data
+                if (previousFlow && previousFlow !== 'No Data' && previousFlow !== 'Error' && previousFlow !== 'Loading...') {
+                    var prevFlowValue = parseFloat(previousFlow.replace(' CFS', ''));
+                    if (!isNaN(prevFlowValue)) {
+                        var flowDiff = newFlow - prevFlowValue;
+                        var percentChange = (flowDiff / prevFlowValue) * 100;
+
+                        // Set trend based on significant change (>5%)
+                        if (Math.abs(percentChange) > 5) {
+                            river.trend = flowDiff > 0 ? 1 : -1;
+                        } else {
+                            river.trend = 0;
+                        }
+                    }
+                }
+
+                // Check for flow alerts
+                var triggeredAlerts = checkFlowAlerts(river.siteNumber, river.currentFlow);
+                if (triggeredAlerts.length > 0) {
+                    showFlowAlert(river.riverName, triggeredAlerts);
+                }
             } else {
                 river.currentFlow = 'No Data';
                 river.flowStatus = 'No Data';
                 river.lastUpdated = new Date().toISOString();
+                river.trend = 0;
             }
             renderSavedRivers();
+            updateDashboardStats();
         })
         .catch(function(error) {
+            console.error('Error updating river flow data:', error);
             river.currentFlow = 'Error';
             river.flowStatus = 'Error';
             river.lastUpdated = new Date().toISOString();
+            river.trend = 0;
             renderSavedRivers();
+            updateDashboardStats();
         });
 }
 
@@ -885,4 +1137,220 @@ function showRiverFlowStatusMessage(message, type) {
 function hideRiverFlowStatusMessage() {
     var statusDiv = document.getElementById('riverFlowStatusMessage');
     if (statusDiv) statusDiv.style.display = 'none';
+}
+
+// ============ FLOW ALERT FUNCTIONS ============
+
+function setFlowAlert(siteNumber, alertType, threshold) {
+    if (!flowAlerts[siteNumber]) {
+        flowAlerts[siteNumber] = {};
+    }
+
+    flowAlerts[siteNumber][alertType] = {
+        threshold: threshold,
+        enabled: true,
+        lastTriggered: null
+    };
+
+    localStorage.setItem('flowAlerts', JSON.stringify(flowAlerts));
+    console.log('Alert set for site', siteNumber, ':', alertType, 'at', threshold, 'CFS');
+}
+
+function removeFlowAlert(siteNumber, alertType) {
+    if (flowAlerts[siteNumber] && flowAlerts[siteNumber][alertType]) {
+        delete flowAlerts[siteNumber][alertType];
+
+        // Remove site entry if no alerts remain
+        if (Object.keys(flowAlerts[siteNumber]).length === 0) {
+            delete flowAlerts[siteNumber];
+        }
+
+        localStorage.setItem('flowAlerts', JSON.stringify(flowAlerts));
+        console.log('Alert removed for site', siteNumber, ':', alertType);
+    }
+}
+
+function checkFlowAlerts(siteNumber, currentFlow) {
+    if (!flowAlerts[siteNumber] || !currentFlow || currentFlow === 'No Data' || currentFlow === 'Error') {
+        return [];
+    }
+
+    var flowValue = parseFloat(currentFlow.replace(' CFS', ''));
+    if (isNaN(flowValue)) return [];
+
+    var triggeredAlerts = [];
+    var siteAlerts = flowAlerts[siteNumber];
+    var now = new Date().toISOString();
+
+    Object.keys(siteAlerts).forEach(function(alertType) {
+        var alert = siteAlerts[alertType];
+        if (!alert.enabled) return;
+
+        var shouldTrigger = false;
+        var message = '';
+
+        switch (alertType) {
+            case 'high':
+                if (flowValue >= alert.threshold) {
+                    shouldTrigger = true;
+                    message = 'High flow alert: ' + flowValue + ' CFS (threshold: ' + alert.threshold + ' CFS)';
+                }
+                break;
+            case 'low':
+                if (flowValue <= alert.threshold) {
+                    shouldTrigger = true;
+                    message = 'Low flow alert: ' + flowValue + ' CFS (threshold: ' + alert.threshold + ' CFS)';
+                }
+                break;
+            case 'flood':
+                if (flowValue >= alert.threshold) {
+                    shouldTrigger = true;
+                    message = 'FLOOD ALERT: ' + flowValue + ' CFS (threshold: ' + alert.threshold + ' CFS)';
+                }
+                break;
+        }
+
+        if (shouldTrigger) {
+            // Only trigger if not triggered in the last hour
+            var lastTriggered = alert.lastTriggered ? new Date(alert.lastTriggered) : null;
+            var hourAgo = new Date(Date.now() - 60 * 60 * 1000);
+
+            if (!lastTriggered || lastTriggered < hourAgo) {
+                alert.lastTriggered = now;
+                triggeredAlerts.push({
+                    type: alertType,
+                    message: message,
+                    severity: alertType === 'flood' ? 'critical' : alertType === 'high' ? 'warning' : 'info'
+                });
+            }
+        }
+    });
+
+    if (triggeredAlerts.length > 0) {
+        localStorage.setItem('flowAlerts', JSON.stringify(flowAlerts));
+    }
+
+    return triggeredAlerts;
+}
+
+function showFlowAlert(riverName, alerts) {
+    alerts.forEach(function(alert) {
+        var alertClass = alert.severity === 'critical' ? 'alert-danger' :
+                        alert.severity === 'warning' ? 'alert-warning' : 'alert-info';
+
+        var alertHtml = '<div class="flow-alert ' + alertClass + '">' +
+            '<strong>' + riverName + '</strong><br>' +
+            alert.message +
+            '<button class="alert-close" onclick="this.parentElement.remove()">×</button>' +
+        '</div>';
+
+        // Add alert to notifications area
+        var notificationArea = document.getElementById('flowNotifications');
+        if (!notificationArea) {
+            // Create notification area if it doesn't exist
+            notificationArea = document.createElement('div');
+            notificationArea.id = 'flowNotifications';
+            notificationArea.className = 'flow-notifications';
+            document.body.appendChild(notificationArea);
+        }
+
+        notificationArea.insertAdjacentHTML('beforeend', alertHtml);
+
+        // Auto-remove non-critical alerts after 10 seconds
+        if (alert.severity !== 'critical') {
+            setTimeout(function() {
+                var alertElement = notificationArea.lastElementChild;
+                if (alertElement && alertElement.classList.contains('flow-alert')) {
+                    alertElement.remove();
+                }
+            }, 10000);
+        }
+    });
+}
+
+function configureRiverAlerts(index) {
+    var river = savedRivers[index];
+    if (!river) return;
+
+    var currentAlerts = flowAlerts[river.siteNumber] || {};
+
+    var alertsHtml = '<div class="alert-config-modal">' +
+        '<div class="alert-config-content">' +
+            '<h3>Configure Alerts for ' + river.riverName + '</h3>' +
+            '<div class="alert-types">' +
+                '<div class="alert-type-section">' +
+                    '<label>' +
+                        '<input type="checkbox" id="highAlert" ' +
+                        (currentAlerts.high ? 'checked' : '') + '> High Flow Alert' +
+                    '</label>' +
+                    '<input type="number" id="highThreshold" placeholder="CFS" ' +
+                    'value="' + (currentAlerts.high ? currentAlerts.high.threshold : '') + '">' +
+                '</div>' +
+                '<div class="alert-type-section">' +
+                    '<label>' +
+                        '<input type="checkbox" id="lowAlert" ' +
+                        (currentAlerts.low ? 'checked' : '') + '> Low Flow Alert' +
+                    '</label>' +
+                    '<input type="number" id="lowThreshold" placeholder="CFS" ' +
+                    'value="' + (currentAlerts.low ? currentAlerts.low.threshold : '') + '">' +
+                '</div>' +
+                '<div class="alert-type-section">' +
+                    '<label>' +
+                        '<input type="checkbox" id="floodAlert" ' +
+                        (currentAlerts.flood ? 'checked' : '') + '> Flood Alert' +
+                    '</label>' +
+                    '<input type="number" id="floodThreshold" placeholder="CFS" ' +
+                    'value="' + (currentAlerts.flood ? currentAlerts.flood.threshold : '') + '">' +
+                '</div>' +
+            '</div>' +
+            '<div class="alert-actions">' +
+                '<button class="btn btn-primary" onclick="saveAlertConfig(' + index + ')">Save</button>' +
+                '<button class="btn btn-secondary" onclick="closeAlertConfig()">Cancel</button>' +
+            '</div>' +
+        '</div>' +
+    '</div>';
+
+    document.body.insertAdjacentHTML('beforeend', alertsHtml);
+}
+
+function saveAlertConfig(index) {
+    var river = savedRivers[index];
+    if (!river) return;
+
+    var highAlert = document.getElementById('highAlert').checked;
+    var highThreshold = parseFloat(document.getElementById('highThreshold').value);
+
+    var lowAlert = document.getElementById('lowAlert').checked;
+    var lowThreshold = parseFloat(document.getElementById('lowThreshold').value);
+
+    var floodAlert = document.getElementById('floodAlert').checked;
+    var floodThreshold = parseFloat(document.getElementById('floodThreshold').value);
+
+    // Clear existing alerts for this site
+    if (flowAlerts[river.siteNumber]) {
+        delete flowAlerts[river.siteNumber];
+    }
+
+    // Set new alerts
+    if (highAlert && !isNaN(highThreshold)) {
+        setFlowAlert(river.siteNumber, 'high', highThreshold);
+    }
+
+    if (lowAlert && !isNaN(lowThreshold)) {
+        setFlowAlert(river.siteNumber, 'low', lowThreshold);
+    }
+
+    if (floodAlert && !isNaN(floodThreshold)) {
+        setFlowAlert(river.siteNumber, 'flood', floodThreshold);
+    }
+
+    closeAlertConfig();
+    renderSavedRivers(); // Refresh the display
+}
+
+function closeAlertConfig() {
+    var modal = document.querySelector('.alert-config-modal');
+    if (modal) {
+        modal.remove();
+    }
 }

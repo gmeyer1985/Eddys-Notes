@@ -220,7 +220,7 @@ async function loadData() {
             startTime: entry.start_time,
             endTime: entry.end_time,
             angler: entry.angler,
-            species: entry.species,
+            targetSpecies: entry.species,
             length: entry.length,
             weight: entry.weight,
             cityState: entry.city_state,
@@ -301,6 +301,26 @@ async function saveFishingEntry(entryData) {
         return result;
     } catch (error) {
         console.error('Error saving fishing entry:', error);
+        throw error;
+    }
+}
+
+async function updateFishingEntry(entryId, entryData) {
+    try {
+        console.log('updateFishingEntry called with ID:', entryId, 'and data:', entryData);
+
+        // Since the backend doesn't support PUT updates, we'll delete the old entry
+        // and create a new one with the updated data
+        console.log('Deleting old entry with ID:', entryId);
+        await apiRequest(`/fishing-entries/${entryId}`, { method: 'DELETE' });
+
+        console.log('Creating new entry with updated data');
+        const result = await saveFishingEntry(entryData);
+
+        console.log('Entry successfully updated (via delete/create)');
+        return result;
+    } catch (error) {
+        console.error('Error updating fishing entry:', error);
         throw error;
     }
 }
