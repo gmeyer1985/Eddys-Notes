@@ -2,7 +2,10 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="mobile-web-app-capable" content="yes">
     <title>Fishing Log</title>
     
     <!-- Google Fonts -->
@@ -779,71 +782,114 @@
     <script src="js/main.js"></script>
 
     <!-- Authentication Modal -->
-    <div id="authModal" class="modal">
+    <div id="authModal" class="modal" role="dialog" aria-labelledby="authModalTitle" aria-hidden="true">
         <div class="modal-content" style="max-width: 400px;">
-            <span class="close" onclick="closeAuthModal()">&times;</span>
-            
+            <span class="close" onclick="closeAuthModal()" aria-label="Close authentication modal">&times;</span>
+
             <!-- Login Form -->
-            <div id="loginForm" style="display: block;">
-                <h2 style="color: #CD853F; text-align: center; margin-bottom: 20px;">Login to Your Fishing Log</h2>
-                
-                <form id="loginFormElement">
+            <div id="loginForm" class="auth-form" style="display: block;">
+                <h2 id="authModalTitle" style="color: #CD853F; text-align: center; margin-bottom: 20px;">Login to Your Fishing Log</h2>
+
+                <form id="loginFormElement" novalidate>
                     <div class="form-group">
                         <label for="loginUsername">Username or Email</label>
-                        <input type="text" id="loginUsername" required>
+                        <input type="text"
+                               id="loginUsername"
+                               name="username"
+                               autocomplete="username"
+                               autocapitalize="none"
+                               autocorrect="off"
+                               spellcheck="false"
+                               required
+                               aria-describedby="loginStatusMessage">
                     </div>
-                    
+
                     <div class="form-group">
                         <label for="loginPassword">Password</label>
-                        <input type="password" id="loginPassword" required>
+                        <input type="password"
+                               id="loginPassword"
+                               name="password"
+                               autocomplete="current-password"
+                               required
+                               aria-describedby="loginStatusMessage">
                     </div>
-                    
+
                     <div class="actions">
                         <button type="submit" class="btn btn-primary">Login</button>
                         <button type="button" class="btn btn-secondary" onclick="showSignupForm()">Need an Account?</button>
                     </div>
                 </form>
-                
-                <div id="loginStatusMessage" class="status-message"></div>
+
+                <div id="loginStatusMessage" class="status-message" role="alert" aria-live="polite"></div>
             </div>
-            
+
             <!-- Signup Form -->
-            <div id="signupForm" style="display: none;">
+            <div id="signupForm" class="auth-form" style="display: none;">
                 <h2 style="color: #CD853F; text-align: center; margin-bottom: 20px;">Create Your Fishing Log Account</h2>
-                
-                <form id="signupFormElement">
+
+                <form id="signupFormElement" novalidate>
                     <div class="form-group">
                         <label for="signupUsername">Username *</label>
-                        <input type="text" id="signupUsername" required>
+                        <input type="text"
+                               id="signupUsername"
+                               name="username"
+                               autocomplete="username"
+                               autocapitalize="none"
+                               autocorrect="off"
+                               spellcheck="false"
+                               required
+                               aria-describedby="signupStatusMessage">
                     </div>
-                    
+
                     <div class="form-group">
                         <label for="signupEmail">Email *</label>
-                        <input type="email" id="signupEmail" required>
+                        <input type="email"
+                               id="signupEmail"
+                               name="email"
+                               autocomplete="email"
+                               autocapitalize="none"
+                               autocorrect="off"
+                               spellcheck="false"
+                               required
+                               aria-describedby="signupStatusMessage">
                     </div>
-                    
+
                     <div class="form-group">
                         <label for="signupPassword">Password *</label>
-                        <input type="password" id="signupPassword" required minlength="6">
+                        <input type="password"
+                               id="signupPassword"
+                               name="new-password"
+                               autocomplete="new-password"
+                               required
+                               minlength="6"
+                               aria-describedby="signupStatusMessage">
                     </div>
-                    
+
                     <div class="form-group">
                         <label for="signupFirstName">First Name</label>
-                        <input type="text" id="signupFirstName">
+                        <input type="text"
+                               id="signupFirstName"
+                               name="given-name"
+                               autocomplete="given-name"
+                               autocapitalize="words">
                     </div>
-                    
+
                     <div class="form-group">
                         <label for="signupLastName">Last Name</label>
-                        <input type="text" id="signupLastName">
+                        <input type="text"
+                               id="signupLastName"
+                               name="family-name"
+                               autocomplete="family-name"
+                               autocapitalize="words">
                     </div>
-                    
+
                     <div class="actions">
                         <button type="submit" class="btn btn-primary">Sign Up</button>
                         <button type="button" class="btn btn-secondary" onclick="showLoginForm()">Already Have Account?</button>
                     </div>
                 </form>
-                
-                <div id="signupStatusMessage" class="status-message"></div>
+
+                <div id="signupStatusMessage" class="status-message" role="alert" aria-live="polite"></div>
             </div>
         </div>
     </div>
