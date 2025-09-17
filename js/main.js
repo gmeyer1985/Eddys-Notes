@@ -17,7 +17,19 @@ function closeMenu() {
     navMenu.classList.remove('active');
 }
 
+// Flag to track if event listeners have been set up
+let eventListenersSetup = false;
+
 function setupEventListeners() {
+    // Prevent duplicate event listeners
+    if (eventListenersSetup) {
+        console.log('Event listeners already set up, skipping...');
+        return;
+    }
+
+    console.log('Setting up event listeners');
+    eventListenersSetup = true;
+
     var filterDate = document.getElementById('filterDate');
     var filterAngler = document.getElementById('filterAngler');
     var filterSpecies = document.getElementById('filterSpecies');
