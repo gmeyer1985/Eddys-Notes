@@ -1134,21 +1134,14 @@
                 if (response.ok) {
                     window.currentUser = data;
                     isAuthenticated = true;
-                    updateUIForAuthenticatedUser();
-                    await initializeAppData();
-                    // Show success and hide the entire login overlay
-                    document.getElementById('authMessage').innerHTML = '<div style="color: green;">Account created successfully! Welcome to your fishing log.</div>';
+                    showAuthMessage('Account created successfully! Welcome to your fishing log.', 'success');
                     setTimeout(() => {
-                        const loginOverlay = document.querySelector('.login-overlay');
-                        if (loginOverlay) {
-                            loginOverlay.style.display = 'none';
+                        hideLoginOverlay();
+                        updateUIForAuthenticatedUser();
+                        if (typeof initializeAppData === 'function') {
+                            initializeAppData();
                         }
-                        // Also hide the form container as backup
-                        const loginContainer = document.querySelector('.login-form-container');
-                        if (loginContainer) {
-                            loginContainer.style.display = 'none';
-                        }
-                    }, 2000);
+                    }, 1000);
                 } else {
                     document.getElementById('authMessage').innerHTML = '<div style="color: red;">' + (data.error || 'Signup failed') + '</div>';
                 }
