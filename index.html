@@ -63,18 +63,6 @@
                             <button class="tab-button" onclick="showSignupTab()">Sign Up</button>
                         </div>
                         
-                        <!-- Login Form -->
-                        <div id="loginForm" class="auth-form active">
-                            <form id="loginFormElement">
-                                <div class="form-group">
-                                    <input type="text" id="loginUsername" placeholder="Username or Email" required>
-                                </div>
-                                <div class="form-group">
-                                    <input type="password" id="loginPassword" placeholder="Password" required>
-                                </div>
-                                <button type="submit" class="auth-button">Login</button>
-                            </form>
-                        </div>
                         
                         <!-- Signup Form -->
                         <div id="signupForm" class="auth-form">
@@ -870,19 +858,18 @@
     <script src="js/auth.js"></script>
     <script>
         // Authentication variables
-        let currentUser = null;
         let isAuthenticated = false;
 
         // Authentication functions
         async function checkAuthStatus() {
             try {
-                const response = await fetch('/api/auth/me', {
+                const response = await fetch('/api/auth/user', {
                     method: 'GET',
                     credentials: 'include'
                 });
 
                 if (response.ok) {
-                    currentUser = await response.json();
+                    window.currentUser = await response.json();
                     isAuthenticated = true;
                     updateUIForAuthenticatedUser();
                 } else {
@@ -958,7 +945,7 @@
                 const data = await response.json();
 
                 if (response.ok) {
-                    currentUser = data;
+                    window.currentUser = data;
                     isAuthenticated = true;
                     closeAuthModal();
                     updateUIForAuthenticatedUser();
@@ -997,7 +984,7 @@
                 const data = await response.json();
 
                 if (response.ok) {
-                    currentUser = data;
+                    window.currentUser = data;
                     isAuthenticated = true;
                     closeAuthModal();
                     updateUIForAuthenticatedUser();
@@ -1017,7 +1004,7 @@
                     credentials: 'include'
                 });
 
-                currentUser = null;
+                window.currentUser = null;
                 isAuthenticated = false;
                 showAuthModal();
                 clearAppData();
@@ -1035,12 +1022,12 @@
             
             // Show admin link if user is admin
             const adminLink = document.getElementById('adminLink');
-            if (adminLink && currentUser && currentUser.is_admin) {
+            if (adminLink && window.currentUser && window.currentUser.is_admin) {
                 adminLink.style.display = 'block';
             }
             
             // Could add welcome message or user info to header if desired
-            console.log('Welcome back, ' + (currentUser.username || 'User') + '!');
+            console.log('Welcome back, ' + (window.currentUser.username || 'User') + '!');
         }
 
         function clearAppData() {
@@ -1096,7 +1083,7 @@
                 const data = await response.json();
 
                 if (response.ok) {
-                    currentUser = data;
+                    window.currentUser = data;
                     isAuthenticated = true;
                     updateUIForAuthenticatedUser();
                     await initializeAppData();
