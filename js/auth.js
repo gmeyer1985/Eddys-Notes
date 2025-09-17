@@ -2,30 +2,42 @@
 function showLoginTab() {
     document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
     document.querySelectorAll('.auth-form').forEach(form => form.classList.remove('active'));
-    
+
     // Find and activate the login tab button
-    const loginTabButton = document.querySelector('.tab-button[onclick*="showLoginTab"]') || 
+    const loginTabButton = document.querySelector('.tab-button[onclick*="showLoginTab"]') ||
                           Array.from(document.querySelectorAll('.tab-button')).find(btn => btn.textContent.includes('Login'));
     if (loginTabButton) {
         loginTabButton.classList.add('active');
     }
-    
-    document.getElementById('loginForm').classList.add('active');
+
+    // Show header login form if it exists, otherwise show modal login form
+    const headerLoginForm = document.getElementById('loginForm');
+    if (headerLoginForm) {
+        headerLoginForm.classList.add('active');
+    }
     clearAuthMessage();
 }
 
 function showSignupTab() {
     document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
     document.querySelectorAll('.auth-form').forEach(form => form.classList.remove('active'));
-    
+
     // Find and activate the signup tab button
-    const signupTabButton = document.querySelector('.tab-button[onclick*="showSignupTab"]') || 
+    const signupTabButton = document.querySelector('.tab-button[onclick*="showSignupTab"]') ||
                            Array.from(document.querySelectorAll('.tab-button')).find(btn => btn.textContent.includes('Sign Up'));
     if (signupTabButton) {
         signupTabButton.classList.add('active');
     }
-    
-    document.getElementById('signupForm').classList.add('active');
+
+    // Show header signup form if it exists, otherwise show modal signup form
+    const headerSignupForm = document.getElementById('headerSignupFormDiv');
+    const modalSignupForm = document.getElementById('signupForm');
+
+    if (headerSignupForm) {
+        headerSignupForm.classList.add('active');
+    } else if (modalSignupForm) {
+        modalSignupForm.classList.add('active');
+    }
     clearAuthMessage();
 }
 
