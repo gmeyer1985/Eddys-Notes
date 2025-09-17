@@ -705,6 +705,16 @@ async function showRiverFlowModal() {
         await loadSavedRivers();
         updateRiverDashboard();
         renderSavedRivers();
+
+        // Automatically fetch live flow data for all rivers
+        if (savedRivers.length > 0) {
+            console.log('Fetching live flow data for', savedRivers.length, 'rivers...');
+            savedRivers.forEach(function(river, index) {
+                setTimeout(function() {
+                    updateRiverFlowData(index);
+                }, index * 200); // Stagger requests to avoid overwhelming the API
+            });
+        }
     } catch (error) {
         console.error('Failed to load rivers:', error);
         if (container) {
