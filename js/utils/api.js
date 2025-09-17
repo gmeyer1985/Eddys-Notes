@@ -94,12 +94,10 @@ async function handleLogin(event) {
 
 async function handleSignup(event) {
     event.preventDefault();
-    
+
     const username = document.getElementById('signupUsername').value;
     const email = document.getElementById('signupEmail').value;
     const password = document.getElementById('signupPassword').value;
-    const firstName = document.getElementById('signupFirstName').value;
-    const lastName = document.getElementById('signupLastName').value;
 
     try {
         const response = await fetch(`${API_BASE_URL}/auth/signup`, {
@@ -108,12 +106,12 @@ async function handleSignup(event) {
                 'Content-Type': 'application/json',
             },
             credentials: 'include',
-            body: JSON.stringify({ 
-                username, 
-                email, 
-                password, 
-                firstName, 
-                lastName 
+            body: JSON.stringify({
+                username,
+                email,
+                password,
+                firstName: '',
+                lastName: ''
             })
         });
 

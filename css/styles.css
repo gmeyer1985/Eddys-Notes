@@ -2341,6 +2341,11 @@
                 margin-bottom: 15px !important;
             }
 
+            #authModal p {
+                font-size: 13px !important;
+                margin-bottom: 15px !important;
+            }
+
             .auth-form input {
                 height: 44px;
                 font-size: 16px; /* Prevents zoom on iOS */
@@ -2352,10 +2357,26 @@
                 font-size: 15px;
             }
 
+            .auth-form small {
+                font-size: 11px !important;
+                margin-top: 4px;
+                display: block;
+            }
+
             .close {
                 font-size: 24px;
                 top: 10px;
                 right: 15px;
+            }
+
+            /* Ensure buttons are always visible by adding bottom padding */
+            #signupForm {
+                padding-bottom: 20px;
+            }
+
+            .auth-form .actions {
+                margin-top: 20px;
+                padding-bottom: 10px;
             }
         }
 
