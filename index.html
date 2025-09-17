@@ -86,18 +86,7 @@
                                     <input type="email" id="signupEmail" placeholder="Email" required>
                                 </div>
                                 <div class="form-group">
-                                    <input type="password" id="signupPassword" placeholder="Password" required>
-                                </div>
-                                <div class="form-row">
-                                    <div class="form-group">
-                                        <input type="text" id="signupFirstName" placeholder="First Name">
-                                    </div>
-                                    <div class="form-group">
-                                        <input type="text" id="signupLastName" placeholder="Last Name">
-                                    </div>
-                                </div>
-                                <div class="form-group">
-                                    <input type="text" id="signupState" placeholder="State (e.g. MN)">
+                                    <input type="password" id="signupPassword" placeholder="Password (min 6 characters)" required minlength="6">
                                 </div>
                                 <button type="submit" class="auth-button">Create Account</button>
                             </form>
@@ -984,12 +973,10 @@
 
         async function handleSignup(event) {
             event.preventDefault();
-            
+
             const username = document.getElementById('signupUsername').value;
             const email = document.getElementById('signupEmail').value;
             const password = document.getElementById('signupPassword').value;
-            const firstName = document.getElementById('signupFirstName').value;
-            const lastName = document.getElementById('signupLastName').value;
 
             try {
                 const response = await fetch('/api/auth/signup', {
@@ -998,12 +985,12 @@
                         'Content-Type': 'application/json',
                     },
                     credentials: 'include',
-                    body: JSON.stringify({ 
-                        username, 
-                        email, 
-                        password, 
-                        firstName, 
-                        lastName 
+                    body: JSON.stringify({
+                        username,
+                        email,
+                        password,
+                        firstName: '',
+                        lastName: ''
                     })
                 });
 
