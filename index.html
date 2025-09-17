@@ -78,15 +78,15 @@
                         
                         <!-- Signup Form -->
                         <div id="signupForm" class="auth-form">
-                            <form id="signupFormElement">
+                            <form id="headerSignupForm">
                                 <div class="form-group">
-                                    <input type="text" id="signupUsername" placeholder="Username" required>
+                                    <input type="text" id="headerSignupUsername" placeholder="Username" required>
                                 </div>
                                 <div class="form-group">
-                                    <input type="email" id="signupEmail" placeholder="Email" required>
+                                    <input type="email" id="headerSignupEmail" placeholder="Email" required>
                                 </div>
                                 <div class="form-group">
-                                    <input type="password" id="signupPassword" placeholder="Password (min 6 characters)" required minlength="6">
+                                    <input type="password" id="headerSignupPassword" placeholder="Password (min 6 characters)" required minlength="6">
                                 </div>
                                 <button type="submit" class="auth-button">Create Account</button>
                             </form>
@@ -1065,9 +1065,53 @@
         }
 
         // Setup form handlers
-        // Temporarily disabled to let auth.js handle form submissions
-        // document.getElementById('loginFormElement').addEventListener('submit', handleLogin);
-        // document.getElementById('signupFormElement').addEventListener('submit', handleSignup);
+        document.getElementById('loginFormElement').addEventListener('submit', handleLogin);
+        document.getElementById('signupFormElement').addEventListener('submit', handleSignup);
+        document.getElementById('headerSignupForm').addEventListener('submit', handleHeaderSignup);
+
+        // Header signup handler
+        async function handleHeaderSignup(event) {
+            event.preventDefault();
+
+            const username = document.getElementById('headerSignupUsername').value;
+            const email = document.getElementById('headerSignupEmail').value;
+            const password = document.getElementById('headerSignupPassword').value;
+
+            try {
+                const response = await fetch('/api/auth/signup', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        username,
+                        email,
+                        password,
+                        firstName: '',
+                        lastName: ''
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    currentUser = data;
+                    isAuthenticated = true;
+                    updateUIForAuthenticatedUser();
+                    await initializeAppData();
+                    // Show success message or hide login form
+                    document.getElementById('authMessage').innerHTML = '<div style="color: green;">Account created successfully! Welcome to your fishing log.</div>';
+                    setTimeout(() => {
+                        document.querySelector('.login-form-container').style.display = 'none';
+                    }, 2000);
+                } else {
+                    document.getElementById('authMessage').innerHTML = '<div style="color: red;">' + (data.error || 'Signup failed') + '</div>';
+                }
+            } catch (error) {
+                document.getElementById('authMessage').innerHTML = '<div style="color: red;">Network error: ' + error.message + '</div>';
+            }
+        }
 
         // Update API configuration to include credentials
         const originalApiRequest = apiRequest;
