@@ -11,9 +11,13 @@ function showLoginTab() {
     }
 
     // Show header login form if it exists, otherwise show modal login form
-    const headerLoginForm = document.getElementById('loginForm');
+    const headerLoginForm = document.getElementById('headerLoginFormDiv');
+    const modalLoginForm = document.getElementById('loginForm');
+
     if (headerLoginForm) {
         headerLoginForm.classList.add('active');
+    } else if (modalLoginForm) {
+        modalLoginForm.classList.add('active');
     }
     clearAuthMessage();
 }
