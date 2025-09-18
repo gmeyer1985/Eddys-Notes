@@ -1,0 +1,69 @@
+{
+  "name": "Eddy's Notes - Fishing Log",
+  "short_name": "Eddy's Notes",
+  "description": "Your Personal Fishing Chronicle - Track catches, manage licenses, and record memorable moments on the water",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#2c5530",
+  "theme_color": "#8B4513",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "lang": "en-US",
+  "categories": ["sports", "lifestyle", "productivity"],
+  "icons": [
+    {
+      "src": "/icons/icon-144x144.png",
+      "sizes": "144x144",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/art/loginBG.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Add New Entry",
+      "short_name": "Add Entry",
+      "description": "Add a new fishing entry",
+      "url": "/?action=add",
+      "icons": [
+        {
+          "src": "/icons/icon-192x192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "View River Flow",
+      "short_name": "River Flow",
+      "description": "Check current river flow conditions",
+      "url": "/?action=river-flow",
+      "icons": [
+        {
+          "src": "/icons/icon-192x192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    }
+  ]
+}
