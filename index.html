@@ -133,6 +133,7 @@
                 <a href="#" onclick="clearFilters(); closeMenu();">Clear Filters</a>
                 <a href="#" onclick="exportData(); closeMenu();">Export Data</a>
                 <a href="#" onclick="importData(); closeMenu();">Import Data</a>
+                <a href="#" onclick="showInstallPrompt(); closeMenu();" id="installAppLink" style="color: #2196F3;">📱 Install App</a>
                 <a href="#" onclick="showAbout(); closeMenu();">About</a>
                 <a href="/admin" id="adminLink" style="display: none; color: #ffa500;" onclick="closeMenu();">🛡️ Admin Panel</a>
                 <a href="#" onclick="handleLogout(); closeMenu();" id="logoutLink" style="display: none; color: #ff6b6b;">Logout</a>
@@ -744,6 +745,101 @@
         </div>
     </div>
 
+    <!-- Install App Modal -->
+    <div id="installAppModal" class="modal">
+        <div class="modal-content" style="max-width: 500px;">
+            <span class="close" onclick="closeInstallModal()">&times;</span>
+            <h2 style="color: #CD853F; text-align: center; margin-bottom: 20px;">📱 Install Eddy's Notes</h2>
+
+            <div id="installContent">
+                <!-- Android/Desktop Chrome Install -->
+                <div id="chromeInstallInstructions" style="display: none;">
+                    <div style="text-align: center; margin-bottom: 20px;">
+                        <div style="font-size: 48px; margin-bottom: 10px;">📱</div>
+                        <p style="margin-bottom: 15px; color: #666;">Install Eddy's Notes as an app for the best experience!</p>
+                        <button id="installButton" class="btn btn-primary" style="padding: 12px 24px; font-size: 16px;">
+                            📥 Install App
+                        </button>
+                    </div>
+                    <div style="background: rgba(139, 69, 19, 0.1); padding: 15px; border-radius: 8px; margin-top: 20px;">
+                        <h4 style="margin-top: 0; color: #8B4513;">Benefits:</h4>
+                        <ul style="margin: 10px 0; padding-left: 20px; color: #666;">
+                            <li>Launch from your home screen</li>
+                            <li>Full-screen app experience</li>
+                            <li>Works offline</li>
+                            <li>Faster loading</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- iOS Safari Instructions -->
+                <div id="iosInstallInstructions" style="display: none;">
+                    <div style="text-align: center; margin-bottom: 20px;">
+                        <div style="font-size: 48px; margin-bottom: 10px;">🍎</div>
+                        <h3 style="color: #8B4513; margin-bottom: 15px;">Install on iPhone/iPad</h3>
+                    </div>
+                    <div style="background: rgba(139, 69, 19, 0.1); padding: 20px; border-radius: 8px;">
+                        <div style="margin-bottom: 15px;">
+                            <strong style="color: #8B4513;">Step 1:</strong> Tap the Share button
+                            <span style="display: inline-block; background: #007AFF; color: white; padding: 2px 6px; border-radius: 4px; font-size: 12px; margin: 0 5px;">⬆️</span>
+                            at the bottom of Safari
+                        </div>
+                        <div style="margin-bottom: 15px;">
+                            <strong style="color: #8B4513;">Step 2:</strong> Scroll down and tap
+                            <span style="display: inline-block; background: #4CAF50; color: white; padding: 2px 6px; border-radius: 4px; font-size: 12px; margin: 0 5px;">+ Add to Home Screen</span>
+                        </div>
+                        <div>
+                            <strong style="color: #8B4513;">Step 3:</strong> Tap "Add" to install the app to your home screen
+                        </div>
+                    </div>
+                    <div style="background: rgba(76, 175, 80, 0.1); padding: 15px; border-radius: 8px; margin-top: 15px;">
+                        <p style="margin: 0; color: #4CAF50; font-weight: bold;">✨ The app will appear on your home screen and launch like a native app!</p>
+                    </div>
+                </div>
+
+                <!-- iOS Chrome Instructions -->
+                <div id="iosChromeInstructions" style="display: none;">
+                    <div style="text-align: center; margin-bottom: 20px;">
+                        <div style="font-size: 48px; margin-bottom: 10px;">🍎</div>
+                        <h3 style="color: #8B4513; margin-bottom: 15px;">For Best Experience</h3>
+                    </div>
+                    <div style="background: rgba(255, 193, 7, 0.1); padding: 20px; border-radius: 8px; border: 1px solid rgba(255, 193, 7, 0.3);">
+                        <p style="margin-bottom: 15px; color: #F57C00; font-weight: bold;">⚠️ For the full app experience on iPhone, please use Safari</p>
+                        <div style="margin-bottom: 15px;">
+                            <strong style="color: #8B4513;">Step 1:</strong> Copy this page's URL
+                        </div>
+                        <div style="margin-bottom: 15px;">
+                            <strong style="color: #8B4513;">Step 2:</strong> Open Safari and paste the URL
+                        </div>
+                        <div>
+                            <strong style="color: #8B4513;">Step 3:</strong> Follow the Safari install instructions above
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Generic Instructions -->
+                <div id="genericInstallInstructions" style="display: none;">
+                    <div style="text-align: center; margin-bottom: 20px;">
+                        <div style="font-size: 48px; margin-bottom: 10px;">📱</div>
+                        <h3 style="color: #8B4513; margin-bottom: 15px;">Install Instructions</h3>
+                    </div>
+                    <div style="background: rgba(139, 69, 19, 0.1); padding: 20px; border-radius: 8px;">
+                        <p style="margin-bottom: 15px; color: #666;">Look for an install prompt or try these options:</p>
+                        <ul style="margin: 10px 0; padding-left: 20px; color: #666;">
+                            <li><strong>Chrome/Edge:</strong> Menu → "Install [App Name]"</li>
+                            <li><strong>Firefox:</strong> Menu → "Install" or "Add to Home Screen"</li>
+                            <li><strong>Safari:</strong> Share → "Add to Home Screen"</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div style="text-align: center; margin-top: 20px;">
+                <button class="btn btn-secondary" onclick="closeInstallModal()">Maybe Later</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Document Viewer Modal -->
     <div id="documentViewerModal" class="modal">
         <div class="modal-content" style="max-width: 90vw; max-height: 90vh; padding: 0; background: #000; border-radius: 8px; overflow: hidden;">
@@ -1179,6 +1275,140 @@
             await initializeApplication(); // Setup event listeners first
             checkAuthStatus(); // Then check authentication
         });
+    </script>
+
+    <!-- PWA Install Functionality -->
+    <script>
+        let deferredPrompt;
+        let installAppLink = document.getElementById('installAppLink');
+
+        // Listen for the beforeinstallprompt event
+        window.addEventListener('beforeinstallprompt', (e) => {
+            // Prevent Chrome 67 and earlier from automatically showing the prompt
+            e.preventDefault();
+            // Stash the event so it can be triggered later
+            deferredPrompt = e;
+            // Show install button in navigation
+            if (installAppLink) {
+                installAppLink.style.display = 'block';
+            }
+        });
+
+        // Detect if app is already installed
+        window.addEventListener('appinstalled', (evt) => {
+            console.log('App was installed');
+            // Hide install button after installation
+            if (installAppLink) {
+                installAppLink.style.display = 'none';
+            }
+            closeInstallModal();
+        });
+
+        // Check if running in standalone mode (already installed)
+        function isAppInstalled() {
+            return window.matchMedia('(display-mode: standalone)').matches ||
+                   window.navigator.standalone === true;
+        }
+
+        // Browser detection
+        function getBrowserInfo() {
+            const userAgent = navigator.userAgent;
+            const isIOS = /iPad|iPhone|iPod/.test(userAgent) && !window.MSStream;
+            const isSafari = /Safari/.test(userAgent) && !/Chrome|CriOS|FxiOS/.test(userAgent);
+            const isChrome = /Chrome|CriOS/.test(userAgent);
+            const isEdge = /Edg/.test(userAgent);
+            const isAndroid = /Android/.test(userAgent);
+
+            return {
+                isIOS,
+                isSafari,
+                isChrome,
+                isEdge,
+                isAndroid,
+                isIOSChrome: isIOS && isChrome,
+                isIOSSafari: isIOS && isSafari,
+                isDesktop: !isIOS && !isAndroid
+            };
+        }
+
+        function showInstallPrompt() {
+            const browser = getBrowserInfo();
+
+            // Hide install link if app is already installed
+            if (isAppInstalled()) {
+                if (installAppLink) {
+                    installAppLink.style.display = 'none';
+                }
+                return;
+            }
+
+            // Show the install modal
+            document.getElementById('installAppModal').style.display = 'block';
+
+            // Hide all instruction sections first
+            document.getElementById('chromeInstallInstructions').style.display = 'none';
+            document.getElementById('iosInstallInstructions').style.display = 'none';
+            document.getElementById('iosChromeInstructions').style.display = 'none';
+            document.getElementById('genericInstallInstructions').style.display = 'none';
+
+            // Show appropriate instructions based on browser/platform
+            if (browser.isIOSSafari) {
+                document.getElementById('iosInstallInstructions').style.display = 'block';
+            } else if (browser.isIOSChrome) {
+                document.getElementById('iosChromeInstructions').style.display = 'block';
+            } else if (deferredPrompt && (browser.isChrome || browser.isEdge)) {
+                document.getElementById('chromeInstallInstructions').style.display = 'block';
+
+                // Set up the install button click handler
+                const installButton = document.getElementById('installButton');
+                installButton.onclick = async () => {
+                    if (deferredPrompt) {
+                        // Show the install prompt
+                        deferredPrompt.prompt();
+
+                        // Wait for the user to respond to the prompt
+                        const { outcome } = await deferredPrompt.userChoice;
+
+                        if (outcome === 'accepted') {
+                            console.log('User accepted the install prompt');
+                            closeInstallModal();
+                        } else {
+                            console.log('User dismissed the install prompt');
+                        }
+
+                        // Clear the deferredPrompt
+                        deferredPrompt = null;
+                    }
+                };
+            } else {
+                document.getElementById('genericInstallInstructions').style.display = 'block';
+            }
+        }
+
+        function closeInstallModal() {
+            document.getElementById('installAppModal').style.display = 'none';
+        }
+
+        // Hide install link if app is already installed
+        document.addEventListener('DOMContentLoaded', function() {
+            if (isAppInstalled() && installAppLink) {
+                installAppLink.style.display = 'none';
+            }
+        });
+
+        // Optional: Show install prompt automatically for first-time visitors
+        // Uncomment the lines below if you want to show the prompt automatically
+        /*
+        window.addEventListener('load', () => {
+            // Wait a bit before showing the prompt to not be too aggressive
+            setTimeout(() => {
+                if (!isAppInstalled() && !localStorage.getItem('installPromptShown')) {
+                    showInstallPrompt();
+                    localStorage.setItem('installPromptShown', 'true');
+                }
+            }, 3000); // Show after 3 seconds
+        });
+        */
     </script>
 
 </body>
